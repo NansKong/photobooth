@@ -1,0 +1,714 @@
+[
+  {
+    "id": "cats_love_01",
+    "filename": "cats_love_01.png",
+    "url": "/stickers/items/cats_love_01.png",
+    "category": "cats",
+    "width": 295,
+    "height": 67
+  },
+  {
+    "id": "cats_love_02",
+    "filename": "cats_love_02.png",
+    "url": "/stickers/items/cats_love_02.png",
+    "category": "cats",
+    "width": 220,
+    "height": 74
+  },
+  {
+    "id": "cats_love_03",
+    "filename": "cats_love_03.png",
+    "url": "/stickers/items/cats_love_03.png",
+    "category": "cats",
+    "width": 141,
+    "height": 137
+  },
+  {
+    "id": "cats_love_04",
+    "filename": "cats_love_04.png",
+    "url": "/stickers/items/cats_love_04.png",
+    "category": "cats",
+    "width": 190,
+    "height": 167
+  },
+  {
+    "id": "cats_love_05",
+    "filename": "cats_love_05.png",
+    "url": "/stickers/items/cats_love_05.png",
+    "category": "cats",
+    "width": 40,
+    "height": 41
+  },
+  {
+    "id": "cats_love_06",
+    "filename": "cats_love_06.png",
+    "url": "/stickers/items/cats_love_06.png",
+    "category": "cats",
+    "width": 573,
+    "height": 504
+  },
+  {
+    "id": "cats_love_07",
+    "filename": "cats_love_07.png",
+    "url": "/stickers/items/cats_love_07.png",
+    "category": "cats",
+    "width": 221,
+    "height": 154
+  },
+  {
+    "id": "cats_love_08",
+    "filename": "cats_love_08.png",
+    "url": "/stickers/items/cats_love_08.png",
+    "category": "cats",
+    "width": 129,
+    "height": 223
+  },
+  {
+    "id": "cats_love_09",
+    "filename": "cats_love_09.png",
+    "url": "/stickers/items/cats_love_09.png",
+    "category": "cats",
+    "width": 58,
+    "height": 233
+  },
+  {
+    "id": "cats_love_10",
+    "filename": "cats_love_10.png",
+    "url": "/stickers/items/cats_love_10.png",
+    "category": "cats",
+    "width": 167,
+    "height": 131
+  },
+  {
+    "id": "cats_love_11",
+    "filename": "cats_love_11.png",
+    "url": "/stickers/items/cats_love_11.png",
+    "category": "cats",
+    "width": 125,
+    "height": 127
+  },
+  {
+    "id": "cats_love_12",
+    "filename": "cats_love_12.png",
+    "url": "/stickers/items/cats_love_12.png",
+    "category": "cats",
+    "width": 204,
+    "height": 205
+  },
+  {
+    "id": "cats_love_13",
+    "filename": "cats_love_13.png",
+    "url": "/stickers/items/cats_love_13.png",
+    "category": "cats",
+    "width": 131,
+    "height": 180
+  },
+  {
+    "id": "cats_love_14",
+    "filename": "cats_love_14.png",
+    "url": "/stickers/items/cats_love_14.png",
+    "category": "cats",
+    "width": 209,
+    "height": 111
+  },
+  {
+    "id": "glam_y2k_01",
+    "filename": "glam_y2k_01.png",
+    "url": "/stickers/items/glam_y2k_01.png",
+    "category": "glam",
+    "width": 61,
+    "height": 87
+  },
+  {
+    "id": "glam_y2k_02",
+    "filename": "glam_y2k_02.png",
+    "url": "/stickers/items/glam_y2k_02.png",
+    "category": "glam",
+    "width": 66,
+    "height": 88
+  },
+  {
+    "id": "glam_y2k_03",
+    "filename": "glam_y2k_03.png",
+    "url": "/stickers/items/glam_y2k_03.png",
+    "category": "glam",
+    "width": 155,
+    "height": 121
+  },
+  {
+    "id": "glam_y2k_04",
+    "filename": "glam_y2k_04.png",
+    "url": "/stickers/items/glam_y2k_04.png",
+    "category": "glam",
+    "width": 107,
+    "height": 139
+  },
+  {
+    "id": "glam_y2k_05",
+    "filename": "glam_y2k_05.png",
+    "url": "/stickers/items/glam_y2k_05.png",
+    "category": "glam",
+    "width": 129,
+    "height": 99
+  },
+  {
+    "id": "glam_y2k_06",
+    "filename": "glam_y2k_06.png",
+    "url": "/stickers/items/glam_y2k_06.png",
+    "category": "glam",
+    "width": 252,
+    "height": 224
+  },
+  {
+    "id": "glam_y2k_07",
+    "filename": "glam_y2k_07.png",
+    "url": "/stickers/items/glam_y2k_07.png",
+    "category": "glam",
+    "width": 141,
+    "height": 200
+  },
+  {
+    "id": "glam_y2k_08",
+    "filename": "glam_y2k_08.png",
+    "url": "/stickers/items/glam_y2k_08.png",
+    "category": "glam",
+    "width": 226,
+    "height": 98
+  },
+  {
+    "id": "glam_y2k_09",
+    "filename": "glam_y2k_09.png",
+    "url": "/stickers/items/glam_y2k_09.png",
+    "category": "glam",
+    "width": 70,
+    "height": 157
+  },
+  {
+    "id": "glam_y2k_10",
+    "filename": "glam_y2k_10.png",
+    "url": "/stickers/items/glam_y2k_10.png",
+    "category": "glam",
+    "width": 185,
+    "height": 150
+  },
+  {
+    "id": "glam_y2k_11",
+    "filename": "glam_y2k_11.png",
+    "url": "/stickers/items/glam_y2k_11.png",
+    "category": "glam",
+    "width": 185,
+    "height": 162
+  },
+  {
+    "id": "glam_y2k_12",
+    "filename": "glam_y2k_12.png",
+    "url": "/stickers/items/glam_y2k_12.png",
+    "category": "glam",
+    "width": 123,
+    "height": 262
+  },
+  {
+    "id": "glam_y2k_13",
+    "filename": "glam_y2k_13.png",
+    "url": "/stickers/items/glam_y2k_13.png",
+    "category": "glam",
+    "width": 136,
+    "height": 87
+  },
+  {
+    "id": "glam_y2k_14",
+    "filename": "glam_y2k_14.png",
+    "url": "/stickers/items/glam_y2k_14.png",
+    "category": "glam",
+    "width": 200,
+    "height": 69
+  },
+  {
+    "id": "glam_y2k_15",
+    "filename": "glam_y2k_15.png",
+    "url": "/stickers/items/glam_y2k_15.png",
+    "category": "glam",
+    "width": 80,
+    "height": 79
+  },
+  {
+    "id": "glam_y2k_16",
+    "filename": "glam_y2k_16.png",
+    "url": "/stickers/items/glam_y2k_16.png",
+    "category": "glam",
+    "width": 181,
+    "height": 123
+  },
+  {
+    "id": "glam_y2k_17",
+    "filename": "glam_y2k_17.png",
+    "url": "/stickers/items/glam_y2k_17.png",
+    "category": "glam",
+    "width": 252,
+    "height": 208
+  },
+  {
+    "id": "glam_y2k_18",
+    "filename": "glam_y2k_18.png",
+    "url": "/stickers/items/glam_y2k_18.png",
+    "category": "glam",
+    "width": 140,
+    "height": 218
+  },
+  {
+    "id": "glam_y2k_19",
+    "filename": "glam_y2k_19.png",
+    "url": "/stickers/items/glam_y2k_19.png",
+    "category": "glam",
+    "width": 299,
+    "height": 144
+  },
+  {
+    "id": "glam_y2k_20",
+    "filename": "glam_y2k_20.png",
+    "url": "/stickers/items/glam_y2k_20.png",
+    "category": "glam",
+    "width": 101,
+    "height": 100
+  },
+  {
+    "id": "glam_y2k_21",
+    "filename": "glam_y2k_21.png",
+    "url": "/stickers/items/glam_y2k_21.png",
+    "category": "glam",
+    "width": 139,
+    "height": 112
+  },
+  {
+    "id": "glam_y2k_22",
+    "filename": "glam_y2k_22.png",
+    "url": "/stickers/items/glam_y2k_22.png",
+    "category": "glam",
+    "width": 200,
+    "height": 152
+  },
+  {
+    "id": "glam_y2k_23",
+    "filename": "glam_y2k_23.png",
+    "url": "/stickers/items/glam_y2k_23.png",
+    "category": "glam",
+    "width": 176,
+    "height": 172
+  },
+  {
+    "id": "cute_buttons_01",
+    "filename": "cute_buttons_01.png",
+    "url": "/stickers/items/cute_buttons_01.png",
+    "category": "charms",
+    "width": 101,
+    "height": 100
+  },
+  {
+    "id": "cute_buttons_02",
+    "filename": "cute_buttons_02.png",
+    "url": "/stickers/items/cute_buttons_02.png",
+    "category": "charms",
+    "width": 104,
+    "height": 99
+  },
+  {
+    "id": "cute_buttons_03",
+    "filename": "cute_buttons_03.png",
+    "url": "/stickers/items/cute_buttons_03.png",
+    "category": "charms",
+    "width": 109,
+    "height": 109
+  },
+  {
+    "id": "cute_buttons_04",
+    "filename": "cute_buttons_04.png",
+    "url": "/stickers/items/cute_buttons_04.png",
+    "category": "charms",
+    "width": 115,
+    "height": 114
+  },
+  {
+    "id": "cute_buttons_05",
+    "filename": "cute_buttons_05.png",
+    "url": "/stickers/items/cute_buttons_05.png",
+    "category": "charms",
+    "width": 107,
+    "height": 104
+  },
+  {
+    "id": "cute_buttons_06",
+    "filename": "cute_buttons_06.png",
+    "url": "/stickers/items/cute_buttons_06.png",
+    "category": "charms",
+    "width": 98,
+    "height": 100
+  },
+  {
+    "id": "cute_buttons_07",
+    "filename": "cute_buttons_07.png",
+    "url": "/stickers/items/cute_buttons_07.png",
+    "category": "charms",
+    "width": 105,
+    "height": 105
+  },
+  {
+    "id": "cute_buttons_08",
+    "filename": "cute_buttons_08.png",
+    "url": "/stickers/items/cute_buttons_08.png",
+    "category": "charms",
+    "width": 107,
+    "height": 108
+  },
+  {
+    "id": "cute_buttons_09",
+    "filename": "cute_buttons_09.png",
+    "url": "/stickers/items/cute_buttons_09.png",
+    "category": "charms",
+    "width": 115,
+    "height": 110
+  },
+  {
+    "id": "cute_buttons_10",
+    "filename": "cute_buttons_10.png",
+    "url": "/stickers/items/cute_buttons_10.png",
+    "category": "charms",
+    "width": 113,
+    "height": 111
+  },
+  {
+    "id": "cute_buttons_11",
+    "filename": "cute_buttons_11.png",
+    "url": "/stickers/items/cute_buttons_11.png",
+    "category": "charms",
+    "width": 121,
+    "height": 118
+  },
+  {
+    "id": "cute_buttons_12",
+    "filename": "cute_buttons_12.png",
+    "url": "/stickers/items/cute_buttons_12.png",
+    "category": "charms",
+    "width": 111,
+    "height": 110
+  },
+  {
+    "id": "cute_buttons_13",
+    "filename": "cute_buttons_13.png",
+    "url": "/stickers/items/cute_buttons_13.png",
+    "category": "charms",
+    "width": 100,
+    "height": 99
+  },
+  {
+    "id": "cute_buttons_14",
+    "filename": "cute_buttons_14.png",
+    "url": "/stickers/items/cute_buttons_14.png",
+    "category": "charms",
+    "width": 109,
+    "height": 106
+  },
+  {
+    "id": "cute_buttons_15",
+    "filename": "cute_buttons_15.png",
+    "url": "/stickers/items/cute_buttons_15.png",
+    "category": "charms",
+    "width": 112,
+    "height": 112
+  },
+  {
+    "id": "cute_buttons_16",
+    "filename": "cute_buttons_16.png",
+    "url": "/stickers/items/cute_buttons_16.png",
+    "category": "charms",
+    "width": 68,
+    "height": 67
+  },
+  {
+    "id": "cute_buttons_17",
+    "filename": "cute_buttons_17.png",
+    "url": "/stickers/items/cute_buttons_17.png",
+    "category": "charms",
+    "width": 105,
+    "height": 105
+  },
+  {
+    "id": "cute_buttons_18",
+    "filename": "cute_buttons_18.png",
+    "url": "/stickers/items/cute_buttons_18.png",
+    "category": "charms",
+    "width": 108,
+    "height": 107
+  },
+  {
+    "id": "cute_buttons_19",
+    "filename": "cute_buttons_19.png",
+    "url": "/stickers/items/cute_buttons_19.png",
+    "category": "charms",
+    "width": 113,
+    "height": 109
+  },
+  {
+    "id": "cute_buttons_20",
+    "filename": "cute_buttons_20.png",
+    "url": "/stickers/items/cute_buttons_20.png",
+    "category": "charms",
+    "width": 109,
+    "height": 109
+  },
+  {
+    "id": "cute_buttons_21",
+    "filename": "cute_buttons_21.png",
+    "url": "/stickers/items/cute_buttons_21.png",
+    "category": "charms",
+    "width": 227,
+    "height": 119
+  },
+  {
+    "id": "cute_buttons_22",
+    "filename": "cute_buttons_22.png",
+    "url": "/stickers/items/cute_buttons_22.png",
+    "category": "charms",
+    "width": 108,
+    "height": 108
+  },
+  {
+    "id": "cute_buttons_23",
+    "filename": "cute_buttons_23.png",
+    "url": "/stickers/items/cute_buttons_23.png",
+    "category": "charms",
+    "width": 108,
+    "height": 107
+  },
+  {
+    "id": "cute_buttons_24",
+    "filename": "cute_buttons_24.png",
+    "url": "/stickers/items/cute_buttons_24.png",
+    "category": "charms",
+    "width": 107,
+    "height": 106
+  },
+  {
+    "id": "cute_buttons_25",
+    "filename": "cute_buttons_25.png",
+    "url": "/stickers/items/cute_buttons_25.png",
+    "category": "charms",
+    "width": 113,
+    "height": 159
+  },
+  {
+    "id": "balloons_stars_01",
+    "filename": "balloons_stars_01.png",
+    "url": "/stickers/items/balloons_stars_01.png",
+    "category": "pretty",
+    "width": 117,
+    "height": 107
+  },
+  {
+    "id": "balloons_stars_02",
+    "filename": "balloons_stars_02.png",
+    "url": "/stickers/items/balloons_stars_02.png",
+    "category": "pretty",
+    "width": 197,
+    "height": 178
+  },
+  {
+    "id": "balloons_stars_03",
+    "filename": "balloons_stars_03.png",
+    "url": "/stickers/items/balloons_stars_03.png",
+    "category": "pretty",
+    "width": 223,
+    "height": 225
+  },
+  {
+    "id": "balloons_stars_04",
+    "filename": "balloons_stars_04.png",
+    "url": "/stickers/items/balloons_stars_04.png",
+    "category": "pretty",
+    "width": 121,
+    "height": 133
+  },
+  {
+    "id": "balloons_stars_05",
+    "filename": "balloons_stars_05.png",
+    "url": "/stickers/items/balloons_stars_05.png",
+    "category": "pretty",
+    "width": 148,
+    "height": 142
+  },
+  {
+    "id": "balloons_stars_06",
+    "filename": "balloons_stars_06.png",
+    "url": "/stickers/items/balloons_stars_06.png",
+    "category": "pretty",
+    "width": 178,
+    "height": 153
+  },
+  {
+    "id": "balloons_stars_07",
+    "filename": "balloons_stars_07.png",
+    "url": "/stickers/items/balloons_stars_07.png",
+    "category": "pretty",
+    "width": 29,
+    "height": 68
+  },
+  {
+    "id": "balloons_stars_08",
+    "filename": "balloons_stars_08.png",
+    "url": "/stickers/items/balloons_stars_08.png",
+    "category": "pretty",
+    "width": 201,
+    "height": 208
+  },
+  {
+    "id": "balloons_stars_09",
+    "filename": "balloons_stars_09.png",
+    "url": "/stickers/items/balloons_stars_09.png",
+    "category": "pretty",
+    "width": 247,
+    "height": 474
+  },
+  {
+    "id": "balloons_stars_10",
+    "filename": "balloons_stars_10.png",
+    "url": "/stickers/items/balloons_stars_10.png",
+    "category": "pretty",
+    "width": 148,
+    "height": 202
+  },
+  {
+    "id": "balloons_stars_11",
+    "filename": "balloons_stars_11.png",
+    "url": "/stickers/items/balloons_stars_11.png",
+    "category": "pretty",
+    "width": 203,
+    "height": 207
+  },
+  {
+    "id": "balloons_stars_12",
+    "filename": "balloons_stars_12.png",
+    "url": "/stickers/items/balloons_stars_12.png",
+    "category": "pretty",
+    "width": 198,
+    "height": 210
+  },
+  {
+    "id": "balloons_stars_13",
+    "filename": "balloons_stars_13.png",
+    "url": "/stickers/items/balloons_stars_13.png",
+    "category": "pretty",
+    "width": 148,
+    "height": 142
+  },
+  {
+    "id": "flowers_blooms_01",
+    "filename": "flowers_blooms_01.png",
+    "url": "/stickers/items/flowers_blooms_01.png",
+    "category": "flowers",
+    "width": 162,
+    "height": 146
+  },
+  {
+    "id": "flowers_blooms_02",
+    "filename": "flowers_blooms_02.png",
+    "url": "/stickers/items/flowers_blooms_02.png",
+    "category": "flowers",
+    "width": 152,
+    "height": 154
+  },
+  {
+    "id": "flowers_blooms_03",
+    "filename": "flowers_blooms_03.png",
+    "url": "/stickers/items/flowers_blooms_03.png",
+    "category": "flowers",
+    "width": 170,
+    "height": 167
+  },
+  {
+    "id": "flowers_blooms_04",
+    "filename": "flowers_blooms_04.png",
+    "url": "/stickers/items/flowers_blooms_04.png",
+    "category": "flowers",
+    "width": 184,
+    "height": 166
+  },
+  {
+    "id": "flowers_blooms_05",
+    "filename": "flowers_blooms_05.png",
+    "url": "/stickers/items/flowers_blooms_05.png",
+    "category": "flowers",
+    "width": 154,
+    "height": 159
+  },
+  {
+    "id": "flowers_blooms_06",
+    "filename": "flowers_blooms_06.png",
+    "url": "/stickers/items/flowers_blooms_06.png",
+    "category": "flowers",
+    "width": 161,
+    "height": 182
+  },
+  {
+    "id": "flowers_blooms_07",
+    "filename": "flowers_blooms_07.png",
+    "url": "/stickers/items/flowers_blooms_07.png",
+    "category": "flowers",
+    "width": 182,
+    "height": 166
+  },
+  {
+    "id": "flowers_blooms_08",
+    "filename": "flowers_blooms_08.png",
+    "url": "/stickers/items/flowers_blooms_08.png",
+    "category": "flowers",
+    "width": 173,
+    "height": 171
+  },
+  {
+    "id": "flowers_blooms_09",
+    "filename": "flowers_blooms_09.png",
+    "url": "/stickers/items/flowers_blooms_09.png",
+    "category": "flowers",
+    "width": 185,
+    "height": 182
+  },
+  {
+    "id": "flowers_blooms_10",
+    "filename": "flowers_blooms_10.png",
+    "url": "/stickers/items/flowers_blooms_10.png",
+    "category": "flowers",
+    "width": 173,
+    "height": 173
+  },
+  {
+    "id": "flowers_blooms_11",
+    "filename": "flowers_blooms_11.png",
+    "url": "/stickers/items/flowers_blooms_11.png",
+    "category": "flowers",
+    "width": 371,
+    "height": 206
+  },
+  {
+    "id": "flowers_blooms_12",
+    "filename": "flowers_blooms_12.png",
+    "url": "/stickers/items/flowers_blooms_12.png",
+    "category": "flowers",
+    "width": 163,
+    "height": 179
+  },
+  {
+    "id": "flowers_blooms_13",
+    "filename": "flowers_blooms_13.png",
+    "url": "/stickers/items/flowers_blooms_13.png",
+    "category": "flowers",
+    "width": 170,
+    "height": 172
+  },
+  {
+    "id": "flowers_blooms_14",
+    "filename": "flowers_blooms_14.png",
+    "url": "/stickers/items/flowers_blooms_14.png",
+    "category": "flowers",
+    "width": 179,
+    "height": 167
+  }
+]

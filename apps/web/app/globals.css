@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Righteous&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=Outfit:wght@400;500;600;700;800&family=Courier+Prime:wght@400;700&family=Caveat:wght@600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --retro-teal: #6BA3A9;
+  --retro-teal-bg: #5D969C;
+  --retro-cream: #F4EFE6;
+  --retro-cream-paper: #EBE4D5;
+  --retro-terracotta: #D67C65;
+  --retro-charcoal: #282A2B;
+  --retro-mustard: #DDA853;
+
+  --font-retro: 'Righteous', cursive, sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'Courier Prime', monospace;
+  --font-handwriting: 'Caveat', cursive;
+}
+
+body {
+  background-color: var(--retro-teal-bg);
+  color: var(--retro-charcoal);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+h1, h2, h3, .font-retro {
+  font-family: var(--font-retro);
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-handwriting {
+  font-family: var(--font-handwriting);
+}
+
+/* 3D Layered Retro Title (matching reference image 1) */
+.retro-3d-title {
+  font-family: 'Righteous', cursive, sans-serif;
+  color: #F4EFE6;
+  letter-spacing: 0.08em;
+  text-shadow: 
+    -2px -2px 0 #282A2B,  
+     2px -2px 0 #282A2B,
+    -2px  2px 0 #282A2B,
+     2px  2px 0 #282A2B,
+     4px  4px 0 #3D6B71,
+     6px  6px 0 #2D5055,
+     8px  8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.retro-3d-title-sm {
+  font-family: 'Righteous', cursive, sans-serif;
+  color: #F4EFE6;
+  letter-spacing: 0.06em;
+  text-shadow: 
+    -1.5px -1.5px 0 #282A2B,  
+     1.5px -1.5px 0 #282A2B,
+    -1.5px  1.5px 0 #282A2B,
+     1.5px  1.5px 0 #282A2B,
+     3px  3px 0 #3D6B71,
+     5px  5px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Vintage Ribbon Banner (matching reference image 1) */
+.retro-ribbon {
+  position: relative;
+  background: #F4EFE6;
+  color: #282A2B;
+  font-family: 'Righteous', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-top: 2px solid #282A2B;
+  border-bottom: 2px solid #282A2B;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Retro Paper & Polaroid Cards */
+.retro-card {
+  background: #F4EFE6;
+  color: #282A2B;
+  border: 2px solid #282A2B;
+  box-shadow: 6px 6px 0px rgba(40, 42, 43, 0.4), 0 15px 30px rgba(0, 0, 0, 0.15);
+  border-radius: 18px;
+}
+
+.retro-card-sm {
+  background: #F4EFE6;
+  color: #282A2B;
+  border: 1.5px solid #282A2B;
+  box-shadow: 4px 4px 0px rgba(40, 42, 43, 0.3);
+  border-radius: 14px;
+}
+
+.polaroid-frame {
+  background: #FFFFFF;
+  padding: 14px 14px 28px 14px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 12px 35px -8px rgba(30, 41, 59, 0.3), 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Tactile 3D Vintage Buttons */
+.retro-btn-terracotta {
+  background: #D67C65;
+  color: #FFFFFF;
+  font-family: 'Righteous', sans-serif;
+  letter-spacing: 0.04em;
+  border: 2px solid #282A2B;
+  box-shadow: 0 5px 0 #282A2B, 0 10px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.12s ease-in-out;
+}
+
+.retro-btn-terracotta:hover {
+  background: #C87059;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #282A2B, 0 14px 20px rgba(0, 0, 0, 0.25);
+}
+
+.retro-btn-terracotta:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #282A2B;
+}
+
+.retro-btn-cream {
+  background: #F4EFE6;
+  color: #282A2B;
+  font-family: 'Righteous', sans-serif;
+  letter-spacing: 0.04em;
+  border: 2px solid #282A2B;
+  box-shadow: 0 5px 0 #282A2B, 0 10px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.12s ease-in-out;
+}
+
+.retro-btn-cream:hover {
+  background: #EBE4D5;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #282A2B, 0 14px 20px rgba(0, 0, 0, 0.2);
+}
+
+.retro-btn-cream:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #282A2B;
+}
+
+.retro-btn-teal {
+  background: #6BA3A9;
+  color: #FFFFFF;
+  font-family: 'Righteous', sans-serif;
+  border: 2px solid #282A2B;
+  box-shadow: 0 5px 0 #282A2B;
+  transition: all 0.12s ease-in-out;
+}
+
+.retro-btn-teal:hover {
+  background: #5D969C;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #282A2B;
+}
+
+.retro-btn-teal:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #282A2B;
+}
+
+/* Subtle vintage dot texture backdrop */
+.retro-pattern {
+  background-color: #5D969C;
+  background-image: radial-gradient(rgba(244, 239, 230, 0.18) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+}
+
+/* Custom retro scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #EBE4D5;
+}
+::-webkit-scrollbar-thumb {
+  background: #D67C65;
+  border: 1px solid #282A2B;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C87059;
+}
