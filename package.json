@@ -14,6 +14,7 @@
     "build:server": "npm run build --workspace=@photobooth/server",
     "build:web": "npm run build --workspace=@photobooth/web",
     "build": "npm run build:shared && npm run build:server && npm run build:web",
+    "vercel-build": "npm run build:shared && npm run build:web",
     "test": "npm run test --workspaces --if-present",
     "start": "npm run start --workspace=@photobooth/server"
   },
