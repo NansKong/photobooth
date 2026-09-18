@@ -6,6 +6,7 @@
     "dev": "next dev -p 3000",
     "prebuild": "npm run build --prefix ../../packages/shared",
     "build": "next build",
+    "vercel-build": "npm run prebuild && next build",
     "start": "next start -p 3000",
     "lint": "next lint"
   },
