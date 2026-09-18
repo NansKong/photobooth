@@ -434,37 +434,37 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
-      <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-3 border-[#282A2B] rounded-3xl p-4 sm:p-6 shadow-retro flex flex-col my-auto max-h-[95vh] text-[#282A2B]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
+      <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-retro flex flex-col my-auto max-h-[98dvh] text-[#282A2B]">
         {/* Header Bar */}
-        <div className="flex items-center justify-between pb-3 border-b-2 border-[#282A2B]/15 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#D67C65] border-2 border-[#282A2B] flex items-center justify-center text-white shadow-retro-sm">
-              <Sparkles className="w-5 h-5" />
+        <div className="flex items-center justify-between pb-2 sm:pb-3 border-b-2 border-[#282A2B]/15 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-[#D67C65] border-2 border-[#282A2B] flex items-center justify-center text-white shadow-retro-sm shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="font-retro font-bold text-lg sm:text-xl text-[#282A2B] flex items-center gap-2">
+              <h2 className="font-retro font-bold text-base sm:text-xl text-[#282A2B] flex items-center gap-1.5 sm:gap-2">
                 PHOTOBOOTH STUDIO 📸
-                <span className="text-xs font-normal text-[#282A2B]/70 font-mono">
+                <span className="text-[10px] sm:text-xs font-normal text-[#282A2B]/70 font-mono">
                   {capturedFrames.length} poses
                 </span>
               </h2>
-              <p className="text-xs text-[#282A2B]/70 font-mono">
+              <p className="text-[11px] sm:text-xs text-[#282A2B]/70 font-mono hidden sm:block">
                 Add cute stickers (cats, bows, charms), drag photos, or export looping GIFs & videos
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Quick Retake Dropdown Menu */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsRetakeDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-[#282A2B] bg-white hover:bg-[#F4EFE6] border-2 border-[#282A2B] rounded-xl shadow-retro-sm transition active:translate-y-0.5"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-mono font-bold text-[#282A2B] bg-white hover:bg-[#F4EFE6] border-2 border-[#282A2B] rounded-xl shadow-retro-sm transition active:translate-y-0.5"
                 title="Retake a specific photo or all photos"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-[#D67C65]" />
+                <RotateCcw className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#D67C65]" />
                 <span>Retake</span>
                 <ChevronDown className={`w-3 h-3 text-[#282A2B]/60 transition-transform ${isRetakeDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -516,41 +516,44 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         </div>
 
         {/* Master Studio Navigation Tabs */}
-        <div className="flex items-center gap-2 py-3 border-b-2 border-[#282A2B]/15 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 py-2 sm:py-3 border-b-2 border-[#282A2B]/15 shrink-0 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('strip')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition shrink-0 ${
               activeTab === 'strip'
                 ? 'bg-[#D67C65] text-white border-[#282A2B] shadow-retro-sm'
                 : 'bg-white/80 text-[#282A2B] border-[#282A2B]/40 hover:border-[#282A2B] hover:bg-white'
             }`}
           >
-            <ImageIcon className="w-4 h-4" />
-            <span>Photostrip & Scrapbook</span>
+            <ImageIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Photostrip & Scrapbook</span>
+            <span className="sm:hidden">Photostrip</span>
           </button>
 
           <button
             onClick={() => setActiveTab('gif')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition shrink-0 ${
               activeTab === 'gif'
                 ? 'bg-[#D67C65] text-white border-[#282A2B] shadow-retro-sm'
                 : 'bg-white/80 text-[#282A2B] border-[#282A2B]/40 hover:border-[#282A2B] hover:bg-white'
             }`}
           >
-            <Film className="w-4 h-4 text-[#6BA3A9]" />
-            <span>Looping GIF</span>
+            <Film className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#6BA3A9]" />
+            <span className="hidden sm:inline">Looping GIF</span>
+            <span className="sm:hidden">GIF</span>
           </button>
 
           <button
             onClick={() => setActiveTab('video')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-retro font-bold uppercase tracking-wider border-2 transition shrink-0 ${
               activeTab === 'video'
                 ? 'bg-[#D67C65] text-white border-[#282A2B] shadow-retro-sm'
                 : 'bg-white/80 text-[#282A2B] border-[#282A2B]/40 hover:border-[#282A2B] hover:bg-white'
             }`}
           >
-            <Video className="w-4 h-4 text-[#DDA853]" />
-            <span>Photobooth Video</span>
+            <Video className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#DDA853]" />
+            <span className="hidden sm:inline">Photobooth Video</span>
+            <span className="sm:hidden">Video</span>
           </button>
         </div>
 
@@ -606,10 +609,10 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         </div>
 
         {/* Main Content Workspace */}
-        <div className="flex flex-col lg:flex-row gap-5 min-h-0 flex-1 overflow-hidden my-2">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-5 min-h-0 flex-1 overflow-hidden my-1 sm:my-2">
           {/* Left: Interactive Preview & Canvas Canvas */}
           <div
-            className="flex-1 min-w-0 flex items-center justify-center bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] p-4 min-h-[380px] overflow-hidden relative shadow-inner"
+            className="flex-1 min-w-0 flex items-center justify-center bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] p-2 sm:p-4 min-h-[200px] sm:min-h-[300px] lg:min-h-[380px] overflow-hidden relative shadow-inner"
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onClick={() => {
@@ -620,14 +623,14 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
             {activeTab === 'strip' && (
               <div
                 ref={previewContainerRef}
-                className="relative flex items-center justify-center max-h-[52vh] sm:max-h-[58vh] max-w-full"
+                className="relative flex items-center justify-center max-h-[34dvh] sm:max-h-[48vh] lg:max-h-[58vh] max-w-full"
               >
                 {stripUrl ? (
                   <div className="relative inline-block select-none">
                     <img
                       src={stripUrl}
                       alt="Photobooth Print"
-                      className="max-h-[52vh] sm:max-h-[58vh] w-auto object-contain rounded-xl shadow-polaroid pointer-events-none"
+                      className="max-h-[34dvh] sm:max-h-[48vh] lg:max-h-[58vh] w-auto object-contain rounded-xl shadow-polaroid pointer-events-none"
                     />
 
                     {/* Interactive Overlay Layer for Draggable Stickers & Movable Photo Cards */}
@@ -819,12 +822,12 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                       muted
                       playsInline
                       controls
-                      className="max-h-[50vh] sm:max-h-[56vh] w-auto object-contain rounded-2xl shadow-polaroid"
+                      className="max-h-[34dvh] sm:max-h-[48vh] lg:max-h-[56vh] w-auto object-contain rounded-2xl shadow-polaroid"
                     />
                     <button
                       type="button"
                       onClick={generateVideo}
-                      className="mt-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFE6] text-[#282A2B] border-2 border-[#282A2B] text-xs font-mono font-bold shadow-retro-sm hover:bg-white transition"
+                      className="mt-2.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFE6] text-[#282A2B] border-2 border-[#282A2B] text-xs font-mono font-bold shadow-retro-sm hover:bg-white transition"
                     >
                       <RefreshCw className="w-3 h-3 text-[#6BA3A9]" />
                       Update Video with New Stickers
@@ -844,7 +847,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
 
           {/* Right Customization Drawer */}
-          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-3 overflow-hidden max-h-[60vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-3 shadow-retro-sm">
+          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2.5 sm:gap-3 overflow-hidden max-h-[38dvh] sm:max-h-[48dvh] lg:max-h-[60vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2.5 sm:p-3 shadow-retro-sm">
             {/* Sub-tabs for sidebar */}
             <div className="flex items-center gap-1 p-1 bg-[#EBE4D5] rounded-xl border border-[#282A2B]/20 shrink-0">
               <button
@@ -1223,48 +1226,54 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         </div>
 
         {/* Action Footer Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-3 w-full pt-3 border-t-2 border-[#282A2B]/15 shrink-0">
-          <button
-            type="button"
-            onClick={onRetake}
-            className="retro-btn-cream flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-mono font-bold text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition"
-          >
-            <RotateCcw className="w-4 h-4 text-[#D67C65]" />
-            <span>Retake Session</span>
-          </button>
-
-          <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 w-full pt-2.5 sm:pt-3 border-t-2 border-[#282A2B]/15 shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
-              onClick={handleCopy}
-              className="retro-btn-cream flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono font-bold text-xs text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition active:translate-y-0.5"
+              onClick={onRetake}
+              className="retro-btn-cream flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-mono font-bold text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition"
             >
-              {hasCopied ? (
-                <>
-                  <Check className="w-4 h-4 text-[#6BA3A9]" />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 text-[#D67C65]" />
-                  <span>Copy Image</span>
-                </>
-              )}
+              <RotateCcw className="w-3.5 h-3.5 text-[#D67C65]" />
+              <span className="inline">Retake Session</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleShare}
-              className="retro-btn-teal flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono font-bold text-xs text-white border-2 border-[#282A2B] shadow-retro-sm transition active:translate-y-0.5"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="retro-btn-cream flex items-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-mono font-bold text-[11px] sm:text-xs text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition active:translate-y-0.5"
+                title="Copy Image"
+              >
+                {hasCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-[#6BA3A9]" />
+                    <span className="hidden sm:inline">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-[#D67C65]" />
+                    <span className="hidden sm:inline">Copy Image</span>
+                    <span className="sm:hidden">Copy</span>
+                  </>
+                )}
+              </button>
 
+              <button
+                type="button"
+                onClick={handleShare}
+                className="retro-btn-teal flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-mono font-bold text-[11px] sm:text-xs text-white border-2 border-[#282A2B] shadow-retro-sm transition active:translate-y-0.5"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full sm:w-auto">
             <button
               type="button"
               onClick={handleDownload}
-              className="retro-btn-terracotta flex items-center gap-2 px-6 py-2.5 rounded-xl font-retro font-bold text-xs sm:text-sm text-white border-2 border-[#282A2B] shadow-retro-sm tracking-wide transition active:translate-y-0.5"
+              className="w-full sm:w-auto retro-btn-terracotta flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl font-retro font-bold text-xs sm:text-sm text-white border-2 border-[#282A2B] shadow-retro-sm tracking-wide transition active:translate-y-0.5"
             >
               <Download className="w-4 h-4" />
               <span>

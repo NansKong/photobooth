@@ -8,7 +8,7 @@ import { SocketEvents } from '@photobooth/shared';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, isStandalone } = useSocket();
 
   const [isCreating, setIsCreating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -17,13 +17,21 @@ export default function LandingPage() {
 
   const handleCreateRoom = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!socket || isCreating) return;
+    if (isCreating) return;
 
     setIsCreating(true);
 
     const chosenName = hostName.trim() || `Guest ${Math.floor(100 + Math.random() * 900)}`;
     if (typeof window !== 'undefined') {
       localStorage.setItem('photobooth_username', chosenName);
+    }
+
+    if (isStandalone || !socket || !isConnected) {
+      // Direct entry fallback with generated 6-character room code
+      const fallbackCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      sessionStorage.setItem(`photobooth_pid_${fallbackCode}`, 'local-host');
+      router.push(`/room/${fallbackCode}`);
+      return;
     }
 
     socket.emit(
@@ -34,8 +42,10 @@ export default function LandingPage() {
           sessionStorage.setItem(`photobooth_pid_${res.room.id}`, res.participant.id);
           router.push(`/room/${res.room.id}`);
         } else {
-          setIsCreating(false);
-          alert('Failed to create room. Please try again.');
+          // Direct entry fallback
+          const fallbackCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          sessionStorage.setItem(`photobooth_pid_${fallbackCode}`, 'local-host');
+          router.push(`/room/${fallbackCode}`);
         }
       }
     );
@@ -51,89 +61,89 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen retro-pattern text-[#282A2B] flex flex-col justify-between overflow-hidden select-none">
       {/* Navigation Header */}
-      <nav className="w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[#F4EFE6] border-2 border-[#282A2B] shadow-retro-sm flex items-center justify-center">
-            <Camera className="w-6 h-6 text-[#D67C65]" />
+      <nav className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between z-20">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-[#F4EFE6] border-2 border-[#282A2B] shadow-retro-sm flex items-center justify-center">
+            <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-[#D67C65]" />
           </div>
           <div>
-            <span className="font-retro text-2xl tracking-wide text-[#F4EFE6] drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
+            <span className="font-retro text-xl sm:text-2xl tracking-wide text-[#F4EFE6] drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
               RETRO<span className="text-[#D67C65]">PHOTOBOOTH</span>
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F4EFE6] border-2 border-[#282A2B] shadow-retro-sm text-xs font-retro">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#F4EFE6] border-2 border-[#282A2B] shadow-retro-sm text-[11px] sm:text-xs font-retro">
             <span
-              className={`w-2.5 h-2.5 rounded-full border border-[#282A2B] ${
-                isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-[#D67C65]'
+              className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border border-[#282A2B] ${
+                isConnected || isStandalone ? 'bg-emerald-500 animate-pulse' : 'bg-[#D67C65]'
               }`}
             />
             <span className="text-[#282A2B]">
-              {isConnected ? 'BOOTH READY' : 'CONNECTING...'}
+              {isStandalone ? 'BOOTH READY' : isConnected ? 'BOOTH READY' : 'CONNECTING...'}
             </span>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <main className="w-full max-w-4xl mx-auto px-6 py-8 flex flex-col items-center text-center z-20">
+      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center text-center z-20">
         {/* 3D Layered Retro Title (Matching Reference Image 1) */}
-        <h1 className="retro-3d-title text-6xl sm:text-8xl md:text-9xl mb-2 select-none">
+        <h1 className="retro-3d-title text-5xl sm:text-8xl md:text-9xl mb-2 select-none">
           RETRO
         </h1>
 
         {/* Vintage Ribbon Banner with Dots (Matching Reference Image 1) */}
-        <div className="flex items-center justify-center gap-3 mb-8 w-full max-w-xl">
-          <span className="text-[#F4EFE6] font-black tracking-widest text-base sm:text-lg opacity-80">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 w-full max-w-xl">
+          <span className="text-[#F4EFE6] font-black tracking-widest text-sm sm:text-lg opacity-80 hidden xs:inline">
             • • • •
           </span>
-          <div className="retro-ribbon px-6 py-1.5 rounded-md border-2 border-[#282A2B] shadow-retro-sm">
-            <span className="text-xs sm:text-sm tracking-widest">
+          <div className="retro-ribbon px-4 sm:px-6 py-1 sm:py-1.5 rounded-md border-2 border-[#282A2B] shadow-retro-sm">
+            <span className="text-[11px] sm:text-sm tracking-widest font-bold">
               VIRTUAL PHOTOBOOTH STUDIO
             </span>
           </div>
-          <span className="text-[#F4EFE6] font-black tracking-widest text-base sm:text-lg opacity-80">
+          <span className="text-[#F4EFE6] font-black tracking-widest text-sm sm:text-lg opacity-80 hidden xs:inline">
             • • • •
           </span>
         </div>
 
         {/* Centerpiece: Vintage Camera & Polaroid Preview Card (Matching Reference Image 1) */}
-        <div className="w-full max-w-lg retro-card p-4 sm:p-5 mb-8 relative">
+        <div className="w-full max-w-lg retro-card p-3 sm:p-5 mb-6 sm:mb-8 relative">
           <div className="bg-[#282A2B] rounded-xl overflow-hidden aspect-[16/10] relative flex items-center justify-center border-2 border-[#282A2B] shadow-inner">
             {/* Vintage Kodak Camera Center Illustration */}
-            <div className="relative flex flex-col items-center justify-center w-full h-full bg-[#3d271d] p-6 text-center">
+            <div className="relative flex flex-col items-center justify-center w-full h-full bg-[#3d271d] p-3 sm:p-6 text-center">
               {/* Twin Lens Camera Face */}
-              <div className="w-48 h-36 rounded-2xl bg-[#5c3a28] border-4 border-[#282A2B] shadow-2xl flex flex-col items-center justify-between p-3 relative">
+              <div className="w-40 sm:w-48 h-28 sm:h-36 rounded-2xl bg-[#5c3a28] border-4 border-[#282A2B] shadow-2xl flex flex-col items-center justify-between p-2.5 sm:p-3 relative">
                 {/* Kodak Brand Plate */}
-                <div className="px-3 py-0.5 rounded bg-[#DDA853] text-[#282A2B] font-retro text-[10px] tracking-wider uppercase border border-[#282A2B]">
+                <div className="px-2.5 sm:px-3 py-0.5 rounded bg-[#DDA853] text-[#282A2B] font-retro text-[9px] sm:text-[10px] tracking-wider uppercase border border-[#282A2B]">
                   KODAK
                 </div>
                 {/* Twin Lenses */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#1C1D1E] border-3 border-[#DDA853] shadow-inner flex items-center justify-center">
-                    <div className="w-4 h-4 rounded-full bg-cyan-400/40" />
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#1C1D1E] border-2 sm:border-3 border-[#DDA853] shadow-inner flex items-center justify-center">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-cyan-400/40" />
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#1C1D1E] border-3 border-[#DDA853] shadow-inner flex items-center justify-center">
-                    <div className="w-4 h-4 rounded-full bg-cyan-400/40" />
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-[#1C1D1E] border-2 sm:border-3 border-[#DDA853] shadow-inner flex items-center justify-center">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-cyan-400/40" />
                   </div>
                 </div>
                 {/* Shutter Label */}
-                <span className="text-[10px] text-[#F4EFE6] font-mono tracking-widest opacity-80">
+                <span className="text-[9px] sm:text-[10px] text-[#F4EFE6] font-mono tracking-widest opacity-80">
                   DUAL VIEWFINDER
                 </span>
               </div>
             </div>
 
             {/* Polaroid Camera Banner */}
-            <div className="absolute bottom-2 px-4 py-1 rounded bg-[#F4EFE6] border border-[#282A2B] text-[11px] font-retro text-[#282A2B] tracking-wider uppercase">
+            <div className="absolute bottom-1.5 sm:bottom-2 px-3 sm:px-4 py-0.5 sm:py-1 rounded bg-[#F4EFE6] border border-[#282A2B] text-[10px] sm:text-[11px] font-retro text-[#282A2B] tracking-wider uppercase">
               KODAK CAMERA • DUAL PORTRAIT
             </div>
           </div>
 
           {/* Retro Quote Caption (Matching Reference Image 1) */}
-          <p className="mt-4 font-retro text-xs sm:text-sm text-[#282A2B] uppercase tracking-wider">
+          <p className="mt-3 sm:mt-4 font-retro text-xs sm:text-sm text-[#282A2B] uppercase tracking-wider">
             &ldquo;TAKE PHOTOS TOGETHER, EVEN WHEN YOU ARE MILES APART.&rdquo;
           </p>
         </div>

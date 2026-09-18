@@ -52,7 +52,13 @@ export default function RoomPage() {
   const [isQrOpen, setIsQrOpen] = useState<boolean>(false);
 
   // Networking Hooks
-  const { socket, isConnected, connectionError } = useSocket();
+  const {
+    socket,
+    isConnected,
+    isStandalone,
+    connectionError,
+    reconnect,
+  } = useSocket();
   const { isSynchronized, toLocalTime } = useClockSync(socket, isConnected);
   const {
     stream: localStream,
@@ -62,11 +68,14 @@ export default function RoomPage() {
     isVideoEnabled,
     isAudioEnabled,
     isMirror,
+    isVirtualStream,
     availableCameras,
     startStream,
+    startVirtualStream,
     toggleVideo,
     toggleAudio,
     toggleCameraFacing,
+    facingMode,
     toggleMirror,
   } = useMediaDevices({ autoStart: true });
 
@@ -87,10 +96,39 @@ export default function RoomPage() {
 
   // Join Room Socket Event Flow
   const handleConfirmJoin = useCallback(() => {
-    if (!socket || !roomId) return;
-
     if (typeof window !== 'undefined') {
       localStorage.setItem('photobooth_username', userName);
+    }
+
+    // Offline / Solo Mode fallback when socket is disconnected or connecting or in Vercel Standalone mode
+    if (isStandalone || !socket || !isConnected) {
+      const fallbackRoom: Room = {
+        id: roomId,
+        hostId: 'local-self',
+        participants: [
+          {
+            id: 'local-self',
+            socketId: 'local-self',
+            name: userName || 'Photobooth User',
+            isHost: true,
+            isReady: true,
+            cameraActive: true,
+            micActive: true,
+            position: { x: 0, y: 0, scale: 1.0, mirror: true },
+            joinedAt: Date.now(),
+          },
+        ],
+        environmentId: 'virtual-studio',
+        environmentType: 'virtual',
+        layoutId: 'duo-classic',
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+        captureSession: null,
+      };
+      setRoom(fallbackRoom);
+      setSelfParticipantId('local-self');
+      setHasEnteredRoom(true);
+      return;
     }
 
     const storedParticipantId =
@@ -112,12 +150,37 @@ export default function RoomPage() {
           sessionStorage.setItem(`photobooth_pid_${roomId}`, res.participant.id);
           setHasEnteredRoom(true);
         } else {
-          alert(res?.error || 'Failed to join room');
-          router.push('/');
+          // If server returned error or room not found, join as local solo host instead of failing
+          const fallbackRoom: Room = {
+            id: roomId,
+            hostId: 'local-self',
+            participants: [
+              {
+                id: 'local-self',
+                socketId: 'local-self',
+                name: userName || 'Photobooth User',
+                isHost: true,
+                isReady: true,
+                cameraActive: true,
+                micActive: true,
+                position: { x: 0, y: 0, scale: 1.0, mirror: true },
+                joinedAt: Date.now(),
+              },
+            ],
+            environmentId: 'virtual-studio',
+            environmentType: 'virtual',
+            layoutId: 'duo-classic',
+            createdAt: Date.now(),
+            lastActivity: Date.now(),
+            captureSession: null,
+          };
+          setRoom(fallbackRoom);
+          setSelfParticipantId('local-self');
+          setHasEnteredRoom(true);
         }
       }
     );
-  }, [socket, roomId, userName, router]);
+  }, [socket, isConnected, isStandalone, roomId, userName]);
 
   // Subscribe to Room Events
   useEffect(() => {
@@ -257,56 +320,103 @@ export default function RoomPage() {
 
   // Environment change
   const handleChangeEnvironment = (envId: string, type: EnvironmentType) => {
-    if (!socket || !roomId) return;
-    socket.emit(SocketEvents.ENVIRONMENT_CHANGE, {
-      roomId,
-      environmentId: envId,
-      environmentType: type,
-    });
+    setRoom((prev) =>
+      prev ? { ...prev, environmentId: envId, environmentType: type } : null
+    );
+    if (socket && isConnected && roomId) {
+      socket.emit(SocketEvents.ENVIRONMENT_CHANGE, {
+        roomId,
+        environmentId: envId,
+        environmentType: type,
+      });
+    }
   };
 
   // Layout change
   const handleChangeLayout = (layoutId: PhotoLayoutId) => {
-    if (!socket || !roomId) return;
-    socket.emit(SocketEvents.LAYOUT_CHANGE, {
-      roomId,
-      layoutId,
-    });
+    setRoom((prev) => (prev ? { ...prev, layoutId } : null));
+    if (socket && isConnected && roomId) {
+      socket.emit(SocketEvents.LAYOUT_CHANGE, {
+        roomId,
+        layoutId,
+      });
+    }
   };
 
   // Trigger Take Photo (Multi-shot session)
   const handleTakePhoto = () => {
-    if (!socket || !roomId) return;
     retakeTargetIndexRef.current = null;
     setRetakeTargetIndex(null);
     setCapturedFrames([]);
     setIsStudioOpen(false);
-    socket.emit(SocketEvents.CAPTURE_START, {
-      roomId,
-      durationMs: 3000,
-      totalShots: selectedShots,
-      shotIntervalMs: 2500,
-    });
+
+    if (socket && isConnected && roomId) {
+      socket.emit(SocketEvents.CAPTURE_START, {
+        roomId,
+        durationMs: 3000,
+        totalShots: selectedShots,
+        shotIntervalMs: 2500,
+      });
+    } else {
+      const now = Date.now();
+      const shots = Array.from({ length: selectedShots }, (_, i) => ({
+        shotIndex: i,
+        targetTimestamp: now + 3000 + i * (3000 + 2500),
+      }));
+
+      setCaptureSession({
+        id: `local-${now}`,
+        scheduledBy: 'local-self',
+        captureTimestamp: now + 3000,
+        durationMs: 3000,
+        totalShots: selectedShots,
+        currentShotIndex: 0,
+        shotIntervalMs: 2500,
+        shots,
+        status: 'counting',
+        readyParticipants: ['local-self'],
+      });
+    }
   };
 
   // Trigger Retake of a Single Specific Photo/Pose (e.g. retake pose 2 without wiping other images)
   const handleRetakeSingle = (poseIndex: number) => {
-    if (!socket || !roomId) return;
     retakeTargetIndexRef.current = poseIndex;
     setRetakeTargetIndex(poseIndex);
     setIsStudioOpen(false);
-    socket.emit(SocketEvents.CAPTURE_START, {
-      roomId,
-      durationMs: 3000,
-      totalShots: 1,
-      shotIntervalMs: 2000,
-    });
+
+    if (socket && isConnected && roomId) {
+      socket.emit(SocketEvents.CAPTURE_START, {
+        roomId,
+        durationMs: 3000,
+        totalShots: 1,
+        shotIntervalMs: 2000,
+      });
+    } else {
+      const now = Date.now();
+      const shots = [{ shotIndex: 0, targetTimestamp: now + 3000 }];
+
+      setCaptureSession({
+        id: `local-${now}`,
+        scheduledBy: 'local-self',
+        captureTimestamp: now + 3000,
+        durationMs: 3000,
+        totalShots: 1,
+        currentShotIndex: 0,
+        shotIntervalMs: 2000,
+        shots,
+        status: 'counting',
+        readyParticipants: ['local-self'],
+      });
+    }
   };
 
   // Cancel Countdown
   const handleCancelCountdown = () => {
-    if (!socket || !roomId) return;
-    socket.emit(SocketEvents.CAPTURE_CANCEL, { roomId });
+    if (socket && isConnected && roomId) {
+      socket.emit(SocketEvents.CAPTURE_CANCEL, { roomId });
+    }
+    setCaptureSession(null);
     if (retakeTargetIndexRef.current !== null) {
       retakeTargetIndexRef.current = null;
       setRetakeTargetIndex(null);
@@ -371,14 +481,29 @@ export default function RoomPage() {
         }
       }
 
-      if (socket && captureSession && shotIndex + 1 >= totalShots) {
+      if (!isConnected || !socket) {
+        if (shotIndex + 1 >= totalShots) {
+          setCaptureSession(null);
+          setIsStudioOpen(true);
+        } else {
+          setCaptureSession((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  currentShotIndex: prev.currentShotIndex + 1,
+                  captureTimestamp: Date.now() + prev.shotIntervalMs,
+                }
+              : null
+          );
+        }
+      } else if (socket && captureSession && shotIndex + 1 >= totalShots) {
         socket.emit(SocketEvents.CAPTURE_COMPLETE, {
           roomId,
           sessionId: captureSession.id,
         });
       }
     },
-    [room, selfParticipantId, socket, captureSession, roomId]
+    [room, selfParticipantId, socket, isConnected, captureSession, roomId]
   );
 
   // Retake all photos
@@ -422,7 +547,13 @@ export default function RoomPage() {
         error={mediaError}
         isLoading={isMediaLoading}
         isConnected={isConnected}
+        isStandalone={isStandalone}
+        isVirtualStream={isVirtualStream}
         onRequestPermission={startStream}
+        onUseDemoCamera={() => startVirtualStream(userName)}
+        onRetryConnection={reconnect}
+        onToggleFacing={toggleCameraFacing}
+        facingMode={facingMode}
         onConfirmJoin={handleConfirmJoin}
       />
     );
@@ -458,24 +589,25 @@ export default function RoomPage() {
 
   // Step 3: The Main Shared Photobooth View
   return (
-    <main className="relative flex flex-col items-center justify-between w-screen h-screen overflow-hidden retro-pattern py-3 select-none">
+    <main className="relative flex flex-col items-center justify-between w-full h-[100dvh] max-h-[100dvh] overflow-hidden retro-pattern py-1.5 sm:py-3 px-1 sm:px-2 select-none">
       {/* Top Bar: Retro Status & Room Details */}
-      <header className="w-full max-w-5xl px-4 flex items-center justify-between z-30 pointer-events-auto">
-        <div className="flex items-center gap-2 sm:gap-2.5">
+      <header className="w-full max-w-5xl px-2 sm:px-4 flex items-center justify-between z-30 pointer-events-auto shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           <button
             onClick={() => setInWaitingRoom(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4EFE6] border-2 border-[#282A2B] text-xs font-retro text-[#282A2B] shadow-retro-sm hover:bg-[#EBE4D5] transition"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[#F4EFE6] border-2 border-[#282A2B] text-[11px] sm:text-xs font-retro text-[#282A2B] shadow-retro-sm hover:bg-[#EBE4D5] transition"
+            title="Return to waiting lounge"
           >
             <span>Room #{room.id}</span>
           </button>
 
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-retro text-[#282A2B] bg-[#F4EFE6] px-3 py-1.5 rounded-xl border-2 border-[#282A2B] shadow-retro-sm">
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-retro text-[#282A2B] bg-[#F4EFE6] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border-2 border-[#282A2B] shadow-retro-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse border border-[#282A2B]" />
-            <span>{room.participants.length} posing</span>
+            <span>{room.participants.length} <span className="hidden sm:inline">posing</span></span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {isSynchronized && (
             <span className="hidden md:inline-flex items-center text-[11px] text-[#282A2B] font-mono px-3 py-1 rounded-xl bg-[#F4EFE6] border-2 border-[#282A2B] shadow-retro-sm">
               Synced Shutter
@@ -483,15 +615,15 @@ export default function RoomPage() {
           )}
           <button
             onClick={() => setIsQrOpen(true)}
-            className="px-3.5 py-1.5 text-xs font-retro rounded-xl retro-btn-terracotta transition"
+            className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-retro rounded-xl retro-btn-terracotta transition shrink-0"
           >
-            + Invite Friends
+            + Invite <span className="hidden sm:inline">Friends</span>
           </button>
         </div>
       </header>
 
       {/* Center Hero: The Shared Photobooth Canvas */}
-      <div className="relative flex-1 w-full max-w-6xl px-2 sm:px-4 flex items-center justify-center min-h-0 z-10">
+      <div className="relative flex-1 w-full max-w-6xl px-1 sm:px-4 flex items-center justify-center min-h-0 z-10 overflow-hidden my-1">
         <PhotoboothCanvas
           ref={canvasRef}
           room={room}
@@ -505,7 +637,7 @@ export default function RoomPage() {
 
       {/* Floating Drawers (Theme, Layout, Pose) */}
       {activeDrawer === 'env' && (
-        <div className="absolute top-16 z-40 w-full max-w-xl px-4 animate-fadeIn">
+        <div className="absolute top-14 sm:top-16 z-40 w-full max-w-xl px-2 sm:px-4 max-h-[75dvh] overflow-y-auto animate-fadeIn">
           <EnvironmentSelector
             currentEnvironmentId={room.environmentId}
             currentType={room.environmentType}
@@ -516,7 +648,7 @@ export default function RoomPage() {
       )}
 
       {activeDrawer === 'layout' && (
-        <div className="absolute top-16 z-40 w-full max-w-lg px-4 animate-fadeIn">
+        <div className="absolute top-14 sm:top-16 z-40 w-full max-w-lg px-2 sm:px-4 max-h-[75dvh] overflow-y-auto animate-fadeIn">
           <LayoutSelector
             currentLayoutId={room.layoutId}
             onChangeLayout={handleChangeLayout}
@@ -526,7 +658,7 @@ export default function RoomPage() {
       )}
 
       {activeDrawer === 'pos' && selfParticipant && (
-        <div className="absolute bottom-24 z-40 w-full max-w-sm px-4 animate-fadeIn">
+        <div className="absolute bottom-28 sm:bottom-24 z-40 w-full max-w-sm px-2 sm:px-4 max-h-[65dvh] overflow-y-auto animate-fadeIn">
           <PositionControls
             position={selfParticipant.position}
             onUpdatePosition={handleUpdatePosition}
@@ -536,7 +668,7 @@ export default function RoomPage() {
       )}
 
       {/* Bottom Floating Camera Controls */}
-      <footer className="w-full pb-2 z-30">
+      <footer className="w-full pb-1 sm:pb-2 px-1 sm:px-2 z-30 shrink-0">
         <CameraControls
           isVideoEnabled={isVideoEnabled}
           isAudioEnabled={isAudioEnabled}

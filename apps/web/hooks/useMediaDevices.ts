@@ -28,6 +28,9 @@ export function useMediaDevices(options: UseMediaDevicesOptions = {}) {
   const [isMirror, setIsMirror] = useState<boolean>(true);
 
   const streamRef = useRef<MediaStream | null>(null);
+  const virtualCanvasIntervalRef = useRef<number | null>(null);
+  const [isVirtualStream, setIsVirtualStream] = useState<boolean>(false);
+
   // Refs to current enable states so startStream can read them without being in its dep array (BUG-3)
   const isVideoEnabledRef = useRef(initialVideo);
   const isAudioEnabledRef = useRef(initialAudio);
@@ -41,6 +44,10 @@ export function useMediaDevices(options: UseMediaDevicesOptions = {}) {
 
   // Stop current active stream tracks
   const stopCurrentStream = useCallback(() => {
+    if (virtualCanvasIntervalRef.current) {
+      window.clearInterval(virtualCanvasIntervalRef.current);
+      virtualCanvasIntervalRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => {
         try {
@@ -83,8 +90,13 @@ export function useMediaDevices(options: UseMediaDevicesOptions = {}) {
     stopCurrentStream();
 
     // Check mediaDevices support
+    const isSecure = typeof window !== 'undefined' ? (window.isSecureContext ?? true) : true;
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setError('Camera API is not supported in this browser. Please use Chrome, Edge, or Firefox.');
+      if (!isSecure && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        setError('Mobile browsers require HTTPS or localhost for physical camera access. You can tap "Use Demo Camera" below to test the photobooth immediately!');
+      } else {
+        setError('Camera API is not supported in this browser. Please use Chrome, Safari, or Edge.');
+      }
       setHasPermission(false);
       setIsLoading(false);
       isStartingRef.current = false;
@@ -249,6 +261,117 @@ export function useMediaDevices(options: UseMediaDevicesOptions = {}) {
     setIsMirror((prev) => !prev);
   }, []);
 
+  const startVirtualStream = useCallback((label: string = 'Demo User') => {
+    stopCurrentStream();
+    if (virtualCanvasIntervalRef.current) {
+      window.clearInterval(virtualCanvasIntervalRef.current);
+      virtualCanvasIntervalRef.current = null;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext('2d');
+
+    let tick = 0;
+    const renderFrame = () => {
+      if (!ctx) return;
+      tick++;
+
+      // Retro photo studio warm backdrop
+      const grad = ctx.createLinearGradient(0, 0, 640, 480);
+      grad.addColorStop(0, '#3D271D');
+      grad.addColorStop(0.5, '#5C3A28');
+      grad.addColorStop(1, '#282A2B');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 640, 480);
+
+      // Subtle vintage horizontal scan lines
+      ctx.fillStyle = 'rgba(244, 239, 230, 0.04)';
+      for (let y = 0; y < 480; y += 4) {
+        ctx.fillRect(0, y, 640, 1.5);
+      }
+
+      // Camera viewfinder corners
+      ctx.strokeStyle = '#DDA853';
+      ctx.lineWidth = 3;
+      const corner = 30;
+      const margin = 25;
+      // top-left
+      ctx.beginPath();
+      ctx.moveTo(margin, margin + corner);
+      ctx.lineTo(margin, margin);
+      ctx.lineTo(margin + corner, margin);
+      ctx.stroke();
+      // top-right
+      ctx.beginPath();
+      ctx.moveTo(640 - margin - corner, margin);
+      ctx.lineTo(640 - margin, margin);
+      ctx.lineTo(640 - margin, margin + corner);
+      ctx.stroke();
+      // bottom-left
+      ctx.beginPath();
+      ctx.moveTo(margin, 480 - margin - corner);
+      ctx.lineTo(margin, 480 - margin);
+      ctx.lineTo(margin + corner, 480 - margin);
+      ctx.stroke();
+      // bottom-right
+      ctx.beginPath();
+      ctx.moveTo(640 - margin - corner, 480 - margin);
+      ctx.lineTo(640 - margin, 480 - margin);
+      ctx.lineTo(640 - margin, 480 - margin - corner);
+      ctx.stroke();
+
+      // Pulsing center focus reticle
+      const pulse = Math.sin(tick * 0.08) * 4;
+      ctx.strokeStyle = '#D67C65';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(320, 240, 40 + pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Retro portrait avatar silhouette
+      ctx.fillStyle = '#F4EFE6';
+      // Head
+      ctx.beginPath();
+      ctx.arc(320, 195, 45, 0, Math.PI * 2);
+      ctx.fill();
+      // Shoulders
+      ctx.beginPath();
+      ctx.arc(320, 340, 85, Math.PI * 1.1, Math.PI * 1.9, false);
+      ctx.fill();
+
+      // Vintage Kodak banner
+      ctx.fillStyle = '#D67C65';
+      ctx.fillRect(150, 420, 340, 32);
+      ctx.strokeStyle = '#282A2B';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(150, 420, 340, 32);
+
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#F4EFE6';
+      ctx.textAlign = 'center';
+      ctx.fillText(`PHOTOBOOTH DEMO • ${label.toUpperCase()}`, 320, 441);
+
+      // Live Timestamp
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#DDA853';
+      ctx.textAlign = 'left';
+      ctx.fillText(new Date().toLocaleTimeString(), 35, 455);
+    };
+
+    renderFrame();
+    virtualCanvasIntervalRef.current = window.setInterval(renderFrame, 1000 / 24);
+
+    const syntheticStream = canvas.captureStream(24);
+    streamRef.current = syntheticStream;
+    setStream(syntheticStream);
+    setHasPermission(true);
+    setError(null);
+    setIsLoading(false);
+    setIsVirtualStream(true);
+  }, [stopCurrentStream]);
+
   useEffect(() => {
     if (autoStart) {
       startStream();
@@ -270,8 +393,10 @@ export function useMediaDevices(options: UseMediaDevicesOptions = {}) {
     isAudioEnabled,
     facingMode,
     isMirror,
+    isVirtualStream,
     availableCameras,
     startStream,
+    startVirtualStream,
     toggleVideo,
     toggleAudio,
     toggleCameraFacing,

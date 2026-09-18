@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: photobooth-signaling-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build:server
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: CORS_ORIGIN
+        value: '*'
