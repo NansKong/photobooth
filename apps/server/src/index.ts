@@ -38,6 +38,15 @@ async function bootstrap() {
   setupSocketHandlers(io, roomManager, captureScheduler);
 
   // Health check & status endpoints
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'ok',
+      service: 'virtual-photobooth-server',
+      message: 'Virtual Photobooth Real-Time WebSocket & API Server is running.',
+      timestamp: Date.now(),
+    });
+  });
+
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
