@@ -80,3 +80,5 @@ $RECYCLE.BIN/
 *.tmp
 *.temp
 *~
+
+.vercel
