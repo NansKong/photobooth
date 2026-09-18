@@ -183,10 +183,12 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
       className="relative w-full h-full flex items-center justify-center select-none overflow-hidden"
     >
       <div
-        className="relative max-w-full max-h-full rounded-2xl overflow-hidden p-2 sm:p-2.5 bg-[#FFFFFF] border-2 border-[#282A2B] shadow-retro transition-all duration-300 cursor-grab active:cursor-grabbing"
+        className="relative max-w-full max-h-full rounded-2xl overflow-hidden p-1.5 sm:p-2.5 bg-[#FFFFFF] border-2 border-[#282A2B] shadow-retro transition-all duration-300 cursor-grab active:cursor-grabbing"
         style={{
           aspectRatio: `${layoutConfig.aspectRatio}`,
-          width: 'min(100%, calc(78vh * ' + layoutConfig.aspectRatio + '))',
+          width: 'min(100%, calc(62dvh * ' + layoutConfig.aspectRatio + '))',
+          maxHeight: 'calc(100% - 8px)',
+          touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -200,9 +202,9 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
         />
 
         {/* Subtle interactive hint */}
-        <div className="absolute top-4 left-4 pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-          <span className="text-[10px] font-retro tracking-wide bg-[#F4EFE6] text-[#282A2B] px-3 py-1 rounded-md border border-[#282A2B] shadow-sm">
-            Drag video to adjust pose
+        <div className="absolute top-2 sm:top-4 left-2 sm:left-4 pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
+          <span className="text-[9px] sm:text-[10px] font-retro tracking-wide bg-[#F4EFE6] text-[#282A2B] px-2 sm:px-3 py-0.5 sm:py-1 rounded-md border border-[#282A2B] shadow-sm">
+            Drag to adjust pose
           </span>
         </div>
       </div>

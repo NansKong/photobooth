@@ -195,3 +195,30 @@ h1, h2, h3, .font-retro {
 ::-webkit-scrollbar-thumb:hover {
   background: #C87059;
 }
+
+/* Touch-drag friendly: prevents page scroll when dragging stickers on mobile */
+.drag-container {
+  touch-action: none;
+}
+
+/* Hide scrollbar visually but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Prevent text selection during drag */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Improve tap target sizes on mobile */
+@media (max-width: 640px) {
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
