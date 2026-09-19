@@ -57,18 +57,8 @@ export function useWebRTC(
       pc = new RTCPeerConnection(RTC_CONFIG);
       pcMapRef.current.set(targetParticipantId, pc);
 
-      // Ensure bidirectional transceivers exist so SDP offers always negotiate both video & audio
-      try {
-        if (pc.getTransceivers().length === 0) {
-          pc.addTransceiver('video', { direction: 'sendrecv' });
-          pc.addTransceiver('audio', { direction: 'sendrecv' });
-        }
-      } catch (e) {
-        console.warn('[WebRTC] addTransceiver warning:', e);
-      }
-
-      // Attach local tracks via ref (BUG-4: was using captured localStream closure)
-      if (localStreamRef.current) {
+      // Attach local tracks via ref
+      if (localStreamRef.current && localStreamRef.current.getTracks().length > 0) {
         localStreamRef.current.getTracks().forEach((track) => {
           try {
             pc?.addTrack(track, localStreamRef.current!);
@@ -76,6 +66,16 @@ export function useWebRTC(
             console.warn('[WebRTC] Error adding local track:', e);
           }
         });
+      } else {
+        // If local stream is not yet ready, prepare transceivers so incoming SDP can negotiate
+        try {
+          if (pc.getTransceivers().length === 0) {
+            pc.addTransceiver('video', { direction: 'sendrecv' });
+            pc.addTransceiver('audio', { direction: 'sendrecv' });
+          }
+        } catch (e) {
+          console.warn('[WebRTC] addTransceiver warning:', e);
+        }
       }
 
       // Handle ICE candidates
@@ -93,34 +93,44 @@ export function useWebRTC(
 
       // Handle incoming remote media tracks
       pc.ontrack = (event) => {
-        console.log(`[WebRTC] Received remote track from ${targetParticipantId}`, event.track.kind);
-        const [incomingStream] = event.streams;
-        if (incomingStream) {
-          setRemoteStreams((prev) => ({
+        console.log(`[WebRTC] Received remote track from ${targetParticipantId}:`, event.track.kind);
+        setRemoteStreams((prev) => {
+          // Construct a fresh MediaStream instance every time so React state reference changes
+          // and triggers PhotoboothCanvas video element refresh
+          const existing = prev[targetParticipantId];
+          let updated: MediaStream;
+          if (event.streams && event.streams[0]) {
+            updated = new MediaStream(event.streams[0].getTracks());
+          } else {
+            const tracks = existing ? existing.getTracks().filter((t) => t.id !== event.track.id) : [];
+            tracks.push(event.track);
+            updated = new MediaStream(tracks);
+          }
+          return {
             ...prev,
-            [targetParticipantId]: incomingStream,
-          }));
-        } else {
-          // If no stream is provided, create one
-          setRemoteStreams((prev) => {
-            const current = prev[targetParticipantId] || new MediaStream();
-            current.addTrack(event.track);
-            return {
-              ...prev,
-              [targetParticipantId]: current,
-            };
-          });
-        }
+            [targetParticipantId]: updated,
+          };
+        });
       };
 
-      pc.onconnectionstatechange = () => {
+      pc.onconnectionstatechange = async () => {
         console.log(`[WebRTC] Connection with ${targetParticipantId}: ${pc?.connectionState}`);
         if (pc?.connectionState === 'failed') {
-          console.warn(`[WebRTC] Connection failed with ${targetParticipantId}, restarting ICE...`);
+          console.warn(`[WebRTC] Connection failed with ${targetParticipantId}, attempting ICE restart offer...`);
           try {
-            (pc as any).restartIce?.();
+            if (selfParticipantId && socket) {
+              const offer = await pc.createOffer({ iceRestart: true });
+              await pc.setLocalDescription(offer);
+              const signal: WebRTCSignalData = {
+                senderId: selfParticipantId,
+                targetId: targetParticipantId,
+                type: 'offer',
+                payload: offer,
+              };
+              socket.emit(SocketEvents.WEBRTC_SIGNAL, signal);
+            }
           } catch (e) {
-            console.warn('[WebRTC] restartIce error:', e);
+            console.warn('[WebRTC] ICE restart offer error:', e);
           }
         }
       };
@@ -138,11 +148,14 @@ export function useWebRTC(
     if (!localStream) return;
 
     pcMapRef.current.forEach((pc) => {
-      const senders = pc.getSenders();
+      const transceivers = pc.getTransceivers();
       localStream.getTracks().forEach((track) => {
-        const sender = senders.find((s) => s.track?.kind === track.kind);
-        if (sender) {
-          sender.replaceTrack(track);
+        const matching = transceivers.find((t) => {
+          if (t.sender.track) return t.sender.track.kind === track.kind;
+          return t.receiver.track?.kind === track.kind;
+        });
+        if (matching && matching.sender) {
+          matching.sender.replaceTrack(track);
         } else {
           try {
             pc.addTrack(track, localStream);
@@ -160,6 +173,13 @@ export function useWebRTC(
 
     participants.forEach(async (participant) => {
       if (participant.id === selfParticipantId) return;
+
+      const existingPc = pcMapRef.current.get(participant.id);
+      const isDead = existingPc && (existingPc.connectionState === 'closed' || existingPc.connectionState === 'failed');
+      if (isDead) {
+        try { existingPc.close(); } catch {}
+        pcMapRef.current.delete(participant.id);
+      }
 
       // Deterministic initiator: smaller ID initiates offer to avoid race conditions
       const shouldInitiate = selfParticipantId < participant.id;

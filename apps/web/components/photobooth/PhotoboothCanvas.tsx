@@ -73,12 +73,13 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
       video.setAttribute('webkit-playsinline', 'true');
       video.setAttribute('muted', 'true');
       video.style.position = 'fixed';
-      video.style.top = '-9999px';
-      video.style.left = '-9999px';
-      video.style.width = '1px';
-      video.style.height = '1px';
-      video.style.opacity = '0';
+      video.style.top = '0';
+      video.style.left = '0';
+      video.style.width = '320px';
+      video.style.height = '240px';
+      video.style.opacity = '0.001';
       video.style.pointerEvents = 'none';
+      video.style.zIndex = '-9999';
       if (typeof document !== 'undefined') {
         document.body.appendChild(video);
       }
@@ -90,6 +91,11 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
       video.onloadedmetadata = () => {
         video?.play().catch(() => {});
       };
+      video.oncanplay = () => {
+        video?.play().catch(() => {});
+      };
+      video.play().catch(() => {});
+    } else if (video.paused) {
       video.play().catch(() => {});
     }
   }, []);
