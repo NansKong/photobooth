@@ -265,7 +265,7 @@ export function renderPhotoboothComposition(
     const videoEl = videoElements.get(participant.id);
     const hasActiveVideo =
       videoEl &&
-      videoEl.readyState >= 2 &&
+      (videoEl.readyState >= 2 || (videoEl.readyState >= 1 && videoEl.videoWidth > 0)) &&
       videoEl.videoWidth > 0 &&
       participant.cameraActive;
 

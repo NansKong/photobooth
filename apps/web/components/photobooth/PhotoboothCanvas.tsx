@@ -56,6 +56,9 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
     if (!stream) {
       if (video) {
         video.srcObject = null;
+        if (video.parentNode) {
+          video.parentNode.removeChild(video);
+        }
         videoElementsRef.current.delete(participantId);
       }
       return;
@@ -65,14 +68,43 @@ export const PhotoboothCanvas = forwardRef<PhotoboothCanvasHandle, PhotoboothCan
       video = document.createElement('video');
       video.autoplay = true;
       video.playsInline = true;
-      video.muted = true; // prevent local feedback
+      video.muted = true; // prevent feedback and satisfy autoplay policy
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('muted', 'true');
+      video.style.position = 'fixed';
+      video.style.top = '-9999px';
+      video.style.left = '-9999px';
+      video.style.width = '1px';
+      video.style.height = '1px';
+      video.style.opacity = '0';
+      video.style.pointerEvents = 'none';
+      if (typeof document !== 'undefined') {
+        document.body.appendChild(video);
+      }
       videoElementsRef.current.set(participantId, video);
     }
 
     if (video.srcObject !== stream) {
       video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video?.play().catch(() => {});
+      };
       video.play().catch(() => {});
     }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      videoElementsRef.current.forEach((video) => {
+        video.srcObject = null;
+        if (video.parentNode) {
+          video.parentNode.removeChild(video);
+        }
+      });
+      videoElementsRef.current.clear();
+    };
   }, []);
 
   // Update local video element

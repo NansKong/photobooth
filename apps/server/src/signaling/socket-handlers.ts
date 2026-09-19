@@ -243,10 +243,26 @@ export function setupSocketHandlers(
     // 10. WebRTC Peer-to-Peer Signaling (Offer, Answer, ICE Candidate)
     socket.on(SocketEvents.WEBRTC_SIGNAL, async (data: WebRTCSignalData) => {
       try {
-        const mapping = roomManager.getSocketMapping(socket.id);
-        if (!mapping) return;
+        let mapping = roomManager.getSocketMapping(socket.id);
+        let roomId = mapping?.roomId;
 
-        const room = await roomManager.getRoom(mapping.roomId);
+        if (!mapping || !roomId) {
+          const joinedRooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+          for (const rId of joinedRooms) {
+            const r = await roomManager.getRoom(rId);
+            const p = r?.participants.find((p) => p.socketId === socket.id || p.id === data.senderId);
+            if (r && p) {
+              roomManager.mapSocket(socket.id, r.id, p.id);
+              mapping = { roomId: r.id, participantId: p.id };
+              roomId = r.id;
+              break;
+            }
+          }
+        }
+
+        if (!mapping || !roomId) return;
+
+        const room = await roomManager.getRoom(roomId);
         if (!room) return;
 
         // Find target participant's socket ID

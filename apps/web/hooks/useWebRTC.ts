@@ -9,7 +9,24 @@ const RTC_CONFIG: RTCConfiguration = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:openrelay.metered.ca:80' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function useWebRTC(
@@ -39,6 +56,16 @@ export function useWebRTC(
       console.log(`[WebRTC] Creating peer connection to ${targetParticipantId}`);
       pc = new RTCPeerConnection(RTC_CONFIG);
       pcMapRef.current.set(targetParticipantId, pc);
+
+      // Ensure bidirectional transceivers exist so SDP offers always negotiate both video & audio
+      try {
+        if (pc.getTransceivers().length === 0) {
+          pc.addTransceiver('video', { direction: 'sendrecv' });
+          pc.addTransceiver('audio', { direction: 'sendrecv' });
+        }
+      } catch (e) {
+        console.warn('[WebRTC] addTransceiver warning:', e);
+      }
 
       // Attach local tracks via ref (BUG-4: was using captured localStream closure)
       if (localStreamRef.current) {
@@ -88,8 +115,13 @@ export function useWebRTC(
 
       pc.onconnectionstatechange = () => {
         console.log(`[WebRTC] Connection with ${targetParticipantId}: ${pc?.connectionState}`);
-        if (pc?.connectionState === 'disconnected' || pc?.connectionState === 'failed') {
-          // Attempt ICE restart or cleanup
+        if (pc?.connectionState === 'failed') {
+          console.warn(`[WebRTC] Connection failed with ${targetParticipantId}, restarting ICE...`);
+          try {
+            (pc as any).restartIce?.();
+          } catch (e) {
+            console.warn('[WebRTC] restartIce error:', e);
+          }
         }
       };
 
