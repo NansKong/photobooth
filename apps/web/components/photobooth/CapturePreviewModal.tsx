@@ -799,31 +799,32 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   // Dynamic pixel sizing for photostrip preview
   const stripAspect = stripNaturalSize.width / (stripNaturalSize.height || 1);
 
-  const padX = 24;
-  const padY = 24;
-  const availW = Math.max(100, (containerSize.width || 480) - padX);
-  const availH = Math.max(100, (containerSize.height || 420) - padY);
+  const padX = 20;
+  const padY = 20;
+  const availW = Math.max(80, (containerSize.width || 360) - padX);
+  const availH = Math.max(80, (containerSize.height || 260) - padY);
 
   let renderW = 0;
   let renderH = 0;
 
   if (stripViewMode === 'fit') {
     const scale = Math.min(availW / stripNaturalSize.width, availH / stripNaturalSize.height);
-    renderW = Math.max(80, Math.round(stripNaturalSize.width * scale));
-    renderH = Math.max(120, Math.round(stripNaturalSize.height * scale));
+    renderW = Math.max(70, Math.round(stripNaturalSize.width * scale));
+    renderH = Math.max(100, Math.round(stripNaturalSize.height * scale));
   } else {
     // Scroll mode: zoomed in for comfortable pose-by-pose editing
-    const targetW = Math.max(280, Math.min(Math.round(availW * scrollZoom), 620));
+    // Ensure targetW does NOT exceed availW on small mobile screens to avoid horizontal clipping
+    const targetW = Math.min(availW, Math.max(160, Math.min(Math.round(availW * 0.94), 580)));
     renderW = targetW;
     renderH = Math.round(targetW / stripAspect);
   }
 
   // Base sticker display size proportional to strip rendered width (140 / 820 ~= 17%)
-  const stickerBaseSize = Math.max(32, Math.min(96, Math.round(renderW * 0.19)));
+  const stickerBaseSize = Math.max(28, Math.min(96, Math.round(renderW * 0.19)));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
-      <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-retro flex flex-col my-auto max-h-[98dvh] text-[#282A2B]">
+      <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-retro flex flex-col my-auto max-h-[100dvh] sm:max-h-[98dvh] overflow-y-auto text-[#282A2B]">
         {/* Header Bar */}
         <div className="flex items-center justify-between pb-2 sm:pb-3 border-b-2 border-[#282A2B]/15 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -997,17 +998,17 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         </div>
 
         {/* Main Content Workspace */}
-        <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 min-h-0 flex-1 overflow-hidden my-1 sm:my-2">
+        <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 flex-1 lg:min-h-0 lg:overflow-hidden my-1 sm:my-2">
           {/* Left: Interactive Preview & Canvas */}
           <div
-            className="flex-1 min-w-0 flex flex-col bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] h-[48dvh] sm:h-[54dvh] lg:h-[62vh] min-h-0 overflow-hidden relative shadow-inner select-none transition-all duration-300"
+            className="w-full flex-1 min-w-0 flex flex-col bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] h-[38dvh] sm:h-[46dvh] lg:h-[62vh] min-h-[280px] sm:min-h-[340px] overflow-hidden relative shadow-inner select-none transition-all duration-300 shrink-0"
             onClick={() => {
               setSelectedStickerId(null);
               setSelectedCardId(null);
             }}
           >
             {/* Top Studio Canvas Controls Header */}
-            <div className="px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between border-b border-white/10 bg-black/30 shrink-0 z-30">
+            <div className="px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between border-b border-white/10 bg-black/30 shrink-0 z-30 gap-1.5">
               {/* Left: Inspect Full Screen Button */}
               <button
                 type="button"
@@ -1015,41 +1016,42 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                   e.stopPropagation();
                   setIsExpandedPreview(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFE6]/95 hover:bg-white text-[#282A2B] border-2 border-[#282A2B] text-[11px] sm:text-xs font-mono font-bold shadow-retro-sm transition active:scale-95 shrink-0"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-[#F4EFE6]/95 hover:bg-white text-[#282A2B] border-2 border-[#282A2B] text-[10px] sm:text-xs font-mono font-bold shadow-retro-sm transition active:scale-95 shrink-0"
                 title="Inspect photo in high-resolution full screen"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-[#6BA3A9]" />
+                <Maximize2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#6BA3A9]" />
+                <span className="hidden xs:inline sm:hidden">Inspect</span>
                 <span className="hidden sm:inline">Inspect Full Screen</span>
-                <span className="sm:hidden">Inspect</span>
+                <span className="xs:hidden">View</span>
               </button>
 
               {/* Right: Studio Strip Canvas Controls */}
               {activeTab === 'strip' ? (
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                   {isRenderingStrip && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#F4EFE6] border border-[#282A2B] text-[10px] text-[#282A2B] font-mono shadow-xs animate-pulse">
+                    <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-[#F4EFE6] border border-[#282A2B] text-[9px] sm:text-[10px] text-[#282A2B] font-mono shadow-xs animate-pulse">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#D67C65] animate-ping" />
-                      <span className="hidden sm:inline">Rendering</span>
+                      <span className="hidden xs:inline">Rendering</span>
                     </div>
                   )}
 
                   {/* View Mode Switcher: Fit Strip vs Scroll Mode */}
-                  <div className="flex items-center bg-[#18191A] border border-white/15 p-0.5 rounded-xl shadow-xs">
+                  <div className="flex items-center bg-[#18191A] border border-white/15 p-0.5 rounded-xl shadow-xs shrink-0">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setStripViewMode('fit');
                       }}
-                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
                         stripViewMode === 'fit'
                           ? 'bg-[#D67C65] text-white shadow-xs'
                           : 'text-white/60 hover:text-white hover:bg-white/10'
                       }`}
                       title="Fit entire photostrip in view (all poses visible at once)"
                     >
-                      <Minimize2 className="w-3 h-3" />
-                      <span>Fit Strip</span>
+                      <Minimize2 className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
+                      <span>Fit</span>
                     </button>
 
                     <button
@@ -1058,15 +1060,15 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                         e.stopPropagation();
                         setStripViewMode('scroll');
                       }}
-                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
                         stripViewMode === 'scroll'
                           ? 'bg-[#D67C65] text-white shadow-xs'
                           : 'text-white/60 hover:text-white hover:bg-white/10'
                       }`}
                       title="Zoom in and scroll poses to decorate up-close"
                     >
-                      <ZoomIn className="w-3 h-3 text-[#DDA853]" />
-                      <span>Scroll Mode</span>
+                      <ZoomIn className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-[#DDA853]" />
+                      <span>Scroll</span>
                     </button>
                   </div>
 
@@ -1438,7 +1440,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
 
           {/* Right Customization Drawer */}
-          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 overflow-hidden max-h-[48dvh] sm:max-h-[54dvh] lg:max-h-[62vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2 sm:p-3 shadow-retro-sm">
+          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2.5 sm:p-3 shadow-retro-sm lg:overflow-hidden lg:max-h-[62vh] shrink-0">
             {/* Sub-tabs for sidebar */}
             <div className="flex items-center gap-1 p-1 bg-[#EBE4D5] rounded-xl border border-[#282A2B]/20 shrink-0">
               <button
@@ -1818,15 +1820,16 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         </div>
 
         {/* Action Footer Buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 w-full pt-2.5 sm:pt-3 border-t-2 border-[#282A2B]/15 shrink-0">
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="sticky sm:static bottom-0 bg-[#F4EFE6]/95 backdrop-blur-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 w-full pt-2 sm:pt-3 border-t-2 border-[#282A2B]/15 shrink-0 z-30 pb-1 sm:pb-0 shadow-sm sm:shadow-none">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
               onClick={onRetake}
-              className="retro-btn-cream flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-mono font-bold text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition"
+              className="retro-btn-cream flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-mono font-bold text-[#282A2B] border-2 border-[#282A2B] shadow-retro-sm transition"
             >
               <RotateCcw className="w-3.5 h-3.5 text-[#D67C65]" />
-              <span className="inline">Retake Session</span>
+              <span className="hidden xs:inline">Retake Session</span>
+              <span className="xs:hidden">Retake</span>
             </button>
 
             <div className="flex items-center gap-2">

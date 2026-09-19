@@ -185,7 +185,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
             <button
               onClick={onTakePhoto}
               disabled={isCountdownActive}
-              className={`group relative flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-retro text-[11px] sm:text-sm tracking-wider uppercase transition-all transform active:scale-95 whitespace-nowrap ${
+              className={`group relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl font-retro text-[10px] sm:text-sm tracking-wider uppercase transition-all transform active:scale-95 whitespace-nowrap ${
                 isCountdownActive
                   ? 'bg-[#A89F91] text-white border-2 border-[#282A2B] cursor-not-allowed opacity-70'
                   : 'retro-btn-terracotta'
