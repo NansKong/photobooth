@@ -60,9 +60,9 @@ export function resolveSocketUrl(): string | null {
   }
 
   // 5. On Vercel (*.vercel.app) or custom production HTTPS domain:
-  // If envUrl is provided and valid, use it
-  if (envUrl && envUrl.length > 0) {
-    return envUrl;
+  // If envUrl is provided and valid (must NOT be localhost when on public HTTPS domain)
+  if (envUrl && envUrl.trim().length > 0 && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.trim();
   }
 
   // No external signaling server configured on Vercel; return null to operate in Standalone Mode

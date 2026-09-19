@@ -183,25 +183,30 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
         <div className="flex items-center justify-center px-1">
           {canClickShutter ? (
             <button
+              type="button"
               onClick={onTakePhoto}
               disabled={isCountdownActive}
-              className={`group relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl font-retro text-[10px] sm:text-sm tracking-wider uppercase transition-all transform active:scale-95 whitespace-nowrap ${
+              className={`group relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl font-retro text-[10px] sm:text-sm tracking-wider uppercase transition-all transform active:scale-95 whitespace-nowrap cursor-pointer touch-manipulation select-none ${
                 isCountdownActive
                   ? 'bg-[#A89F91] text-white border-2 border-[#282A2B] cursor-not-allowed opacity-70'
-                  : 'retro-btn-terracotta'
+                  : 'retro-btn-terracotta active:brightness-95'
               }`}
             >
               <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-red-600 animate-ping shrink-0" />
               <span>{isCountdownActive ? 'Snapping...' : 'Take Photos'}</span>
             </button>
           ) : (
-            <div
-              className="flex items-center gap-1 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#A89F91]/40 border-2 border-[#282A2B] text-[10px] sm:text-xs font-retro text-[#282A2B]/70 cursor-not-allowed shadow-inner whitespace-nowrap"
+            <button
+              type="button"
+              onClick={() => {
+                alert('Only the host can take photos right now. Ask the room host to tap Take Photos or toggle Anyone Can Click!');
+              }}
+              className="flex items-center gap-1 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#A89F91]/40 border-2 border-[#282A2B] text-[10px] sm:text-xs font-retro text-[#282A2B]/80 cursor-pointer shadow-inner whitespace-nowrap active:scale-95 touch-manipulation"
               title="Only 1 person (the booth host) can click to take photos"
             >
               <Lock className="w-3 h-3 text-[#D67C65]" />
               <span>Host Controls</span>
-            </div>
+            </button>
           )}
         </div>
 

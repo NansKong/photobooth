@@ -58,7 +58,9 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
         return;
       }
 
-      const targetLocalTime = toLocalTime(activeShot.targetTimestamp);
+      const targetLocalTime = session.id.startsWith('local-')
+        ? activeShot.targetTimestamp
+        : toLocalTime(activeShot.targetTimestamp);
       const diff = targetLocalTime - now;
 
       setCurrentPoseIndex(activeShot.shotIndex + 1);

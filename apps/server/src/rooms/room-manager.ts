@@ -80,8 +80,23 @@ export class RoomManager {
     socketId: string
   ): Promise<{ room: Room; participant: Participant } | null> {
     const normalizedId = roomId.toUpperCase().trim();
-    const room = await this.store.getRoom(normalizedId);
-    if (!room) return null;
+    let room = await this.store.getRoom(normalizedId);
+    if (!room) {
+      // Auto-create room if it doesn't exist on server yet (e.g. joined via direct link or server restarted)
+      const initialHostId = crypto.randomUUID();
+      room = {
+        id: normalizedId,
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+        hostId: initialHostId,
+        participants: [],
+        environmentId: 'virtual-studio',
+        environmentType: 'virtual',
+        layoutId: 'duo-classic',
+        captureSession: null,
+      };
+      await this.store.saveRoom(room);
+    }
 
     room.lastActivity = Date.now();
 

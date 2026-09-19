@@ -176,10 +176,23 @@ export function setupSocketHandlers(
     });
 
     // 7. Synchronized capture initiation
-    socket.on(SocketEvents.CAPTURE_START, async (data: CaptureStartPayload) => {
+    socket.on(SocketEvents.CAPTURE_START, async (data: CaptureStartPayload, callback?: (res: any) => void) => {
       try {
-        const mapping = roomManager.getSocketMapping(socket.id);
-        if (!mapping || mapping.roomId !== data.roomId) return;
+        let mapping = roomManager.getSocketMapping(socket.id);
+        if (!mapping || mapping.roomId !== data.roomId) {
+          const room = await roomManager.getRoom(data.roomId);
+          if (room) {
+            const participantId = room.participants[0]?.id || room.hostId || socket.id;
+            roomManager.mapSocket(socket.id, data.roomId, participantId);
+            mapping = { roomId: data.roomId, participantId };
+            socket.join(data.roomId);
+          }
+        }
+
+        if (!mapping || mapping.roomId !== data.roomId) {
+          if (typeof callback === 'function') callback({ success: false, error: 'Room not mapped' });
+          return;
+        }
 
         const result = await captureScheduler.scheduleCapture(
           data.roomId,
@@ -191,9 +204,13 @@ export function setupSocketHandlers(
 
         if (result) {
           io.to(data.roomId).emit(SocketEvents.CAPTURE_SCHEDULED, result.session);
+          if (typeof callback === 'function') callback({ success: true, session: result.session });
+        } else {
+          if (typeof callback === 'function') callback({ success: false, error: 'Schedule failed' });
         }
       } catch (err) {
         console.error('[Socket] Error scheduling capture:', err);
+        if (typeof callback === 'function') callback({ success: false, error: 'Internal error' });
       }
     });
 

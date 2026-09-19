@@ -43,7 +43,7 @@ export default function RoomPage() {
   const [captureSession, setCaptureSession] = useState<CaptureSession | null>(null);
   const [capturedFrames, setCapturedFrames] = useState<HTMLCanvasElement[]>([]);
   const [selectedShots, setSelectedShots] = useState<number>(4);
-  const [onlyHostCanClick, setOnlyHostCanClick] = useState<boolean>(true);
+  const [onlyHostCanClick, setOnlyHostCanClick] = useState<boolean>(false);
   const [isStudioOpen, setIsStudioOpen] = useState<boolean>(false);
   const [retakeTargetIndex, setRetakeTargetIndex] = useState<number | null>(null);
   const retakeTargetIndexRef = useRef<number | null>(null);
@@ -265,6 +265,31 @@ export default function RoomPage() {
       setCaptureSession(null);
     };
 
+    const handleSocketConnect = () => {
+      if (roomId) {
+        const storedParticipantId =
+          typeof window !== 'undefined'
+            ? sessionStorage.getItem(`photobooth_pid_${roomId}`) || selfParticipantId || ''
+            : selfParticipantId || '';
+
+        socket.emit(
+          SocketEvents.ROOM_JOIN,
+          {
+            roomId,
+            participantId: storedParticipantId,
+            name: userName,
+          },
+          (res: any) => {
+            if (res?.success) {
+              setRoom(res.room);
+              setSelfParticipantId(res.participant.id);
+            }
+          }
+        );
+      }
+    };
+
+    socket.on('connect', handleSocketConnect);
     socket.on(SocketEvents.ROOM_STATE, handleRoomState);
     socket.on(SocketEvents.PARTICIPANT_JOINED, handleParticipantJoined);
     socket.on(SocketEvents.PARTICIPANT_LEFT, handleParticipantLeft);
@@ -276,6 +301,7 @@ export default function RoomPage() {
     socket.on(SocketEvents.CAPTURE_FINISHED, handleCaptureFinished);
 
     return () => {
+      socket.off('connect', handleSocketConnect);
       socket.off(SocketEvents.ROOM_STATE, handleRoomState);
       socket.off(SocketEvents.PARTICIPANT_JOINED, handleParticipantJoined);
       socket.off(SocketEvents.PARTICIPANT_LEFT, handleParticipantLeft);
@@ -286,7 +312,7 @@ export default function RoomPage() {
       socket.off(SocketEvents.CAPTURE_CANCELLED, handleCaptureCancelled);
       socket.off(SocketEvents.CAPTURE_FINISHED, handleCaptureFinished);
     };
-  }, [socket]);
+  }, [socket, roomId, userName, selfParticipantId]);
 
   // Position updates handler
   const handleUpdatePosition = useCallback(
@@ -350,14 +376,14 @@ export default function RoomPage() {
     setCapturedFrames([]);
     setIsStudioOpen(false);
 
-    if (socket && isConnected && roomId) {
-      socket.emit(SocketEvents.CAPTURE_START, {
-        roomId,
-        durationMs: 3000,
-        totalShots: selectedShots,
-        shotIntervalMs: 2500,
-      });
-    } else {
+    const isLocalMode =
+      isStandalone ||
+      !socket ||
+      !isConnected ||
+      selfParticipantId === 'local-self' ||
+      room?.hostId === 'local-self';
+
+    const triggerLocalCapture = () => {
       const now = Date.now();
       const shots = Array.from({ length: selectedShots }, (_, i) => ({
         shotIndex: i,
@@ -366,7 +392,7 @@ export default function RoomPage() {
 
       setCaptureSession({
         id: `local-${now}`,
-        scheduledBy: 'local-self',
+        scheduledBy: selfParticipantId || 'local-self',
         captureTimestamp: now + 3000,
         durationMs: 3000,
         totalShots: selectedShots,
@@ -374,8 +400,36 @@ export default function RoomPage() {
         shotIntervalMs: 2500,
         shots,
         status: 'counting',
-        readyParticipants: ['local-self'],
+        readyParticipants: [selfParticipantId || 'local-self'],
       });
+    };
+
+    if (!isLocalMode && socket && isConnected && roomId) {
+      let acknowledged = false;
+      const watchdog = setTimeout(() => {
+        if (!acknowledged) {
+          console.warn('[handleTakePhoto] Server capture timed out; falling back to local capture session');
+          triggerLocalCapture();
+        }
+      }, 800);
+
+      socket.emit(
+        SocketEvents.CAPTURE_START,
+        {
+          roomId,
+          durationMs: 3000,
+          totalShots: selectedShots,
+          shotIntervalMs: 2500,
+        },
+        (res: any) => {
+          if (res?.success) {
+            acknowledged = true;
+            clearTimeout(watchdog);
+          }
+        }
+      );
+    } else {
+      triggerLocalCapture();
     }
   };
 
@@ -385,20 +439,20 @@ export default function RoomPage() {
     setRetakeTargetIndex(poseIndex);
     setIsStudioOpen(false);
 
-    if (socket && isConnected && roomId) {
-      socket.emit(SocketEvents.CAPTURE_START, {
-        roomId,
-        durationMs: 3000,
-        totalShots: 1,
-        shotIntervalMs: 2000,
-      });
-    } else {
+    const isLocalMode =
+      isStandalone ||
+      !socket ||
+      !isConnected ||
+      selfParticipantId === 'local-self' ||
+      room?.hostId === 'local-self';
+
+    const triggerLocalSingle = () => {
       const now = Date.now();
       const shots = [{ shotIndex: 0, targetTimestamp: now + 3000 }];
 
       setCaptureSession({
         id: `local-${now}`,
-        scheduledBy: 'local-self',
+        scheduledBy: selfParticipantId || 'local-self',
         captureTimestamp: now + 3000,
         durationMs: 3000,
         totalShots: 1,
@@ -406,8 +460,35 @@ export default function RoomPage() {
         shotIntervalMs: 2000,
         shots,
         status: 'counting',
-        readyParticipants: ['local-self'],
+        readyParticipants: [selfParticipantId || 'local-self'],
       });
+    };
+
+    if (!isLocalMode && socket && isConnected && roomId) {
+      let acknowledged = false;
+      const watchdog = setTimeout(() => {
+        if (!acknowledged) {
+          triggerLocalSingle();
+        }
+      }, 800);
+
+      socket.emit(
+        SocketEvents.CAPTURE_START,
+        {
+          roomId,
+          durationMs: 3000,
+          totalShots: 1,
+          shotIntervalMs: 2000,
+        },
+        (res: any) => {
+          if (res?.success) {
+            acknowledged = true;
+            clearTimeout(watchdog);
+          }
+        }
+      );
+    } else {
+      triggerLocalSingle();
     }
   };
 
@@ -481,7 +562,13 @@ export default function RoomPage() {
         }
       }
 
-      if (!isConnected || !socket) {
+      const isLocalSession =
+        !isConnected ||
+        !socket ||
+        selfParticipantId === 'local-self' ||
+        captureSession?.id?.startsWith('local-');
+
+      if (isLocalSession) {
         if (shotIndex + 1 >= totalShots) {
           setCaptureSession(null);
           setIsStudioOpen(true);
@@ -501,6 +588,11 @@ export default function RoomPage() {
           roomId,
           sessionId: captureSession.id,
         });
+        // Safety timeout: ensure studio opens even if server dropped CAPTURE_FINISHED event
+        setTimeout(() => {
+          setCaptureSession(null);
+          setIsStudioOpen(true);
+        }, 600);
       }
     },
     [room, selfParticipantId, socket, isConnected, captureSession, roomId]
