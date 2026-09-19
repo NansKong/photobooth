@@ -184,6 +184,59 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   } | null>(null);
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ─── Studio Photostrip View Mode ─────────────────────────────────────────
+  // 'fit' scales the photostrip to fit 100% inside the preview without any clipping
+  // 'scroll' zooms in to allow close-up scrolling through each pose for precision editing
+  const [stripViewMode, setStripViewMode] = useState<'fit' | 'scroll'>('fit');
+  const [scrollZoom, setScrollZoom] = useState<number>(1.6);
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  const getLayoutDimensions = (l: PhotostripLayoutId) => {
+    switch (l) {
+      case 'strip-twin': return { width: 1480, height: 2100 };
+      case 'strip-1x3': return { width: 820, height: 1750 };
+      case 'grid-2x2': return { width: 1200, height: 1450 };
+      case 'scrapbook-freeform': return { width: 1400, height: 1400 };
+      case 'strip-1x4':
+      default: return { width: 820, height: 2100 };
+    }
+  };
+
+  const [stripNaturalSize, setStripNaturalSize] = useState<{ width: number; height: number }>(() =>
+    getLayoutDimensions(capturedFrames.length === 3 ? 'strip-1x3' : 'strip-1x4')
+  );
+
+  useEffect(() => {
+    setStripNaturalSize(getLayoutDimensions(layout));
+  }, [layout]);
+
+  // ResizeObserver to track preview container size dynamically
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setContainerSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      }
+    };
+
+    measure();
+
+    const ro = new ResizeObserver(() => {
+      measure();
+    });
+    ro.observe(el);
+
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [activeTab, stripViewMode]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Trigger celebration confetti on initial open
   useEffect(() => {
     confetti({
@@ -326,12 +379,20 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
   // Add a sticker onto canvas
   const handleAddSticker = (stickerItem: { url: string; label: string }) => {
+    let targetY = 50;
+    if (stripViewMode === 'scroll' && previewContainerRef.current) {
+      const container = previewContainerRef.current;
+      const scrollCenter = container.scrollTop + container.clientHeight / 2;
+      const totalH = container.scrollHeight || 1;
+      targetY = Math.max(10, Math.min(90, Math.round((scrollCenter / totalH) * 100)));
+    }
+
     const newSticker: PhotostripUserSticker = {
       id: `stk-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       url: stickerItem.url,
       label: stickerItem.label,
       x: 50 + (Math.random() * 12 - 6),
-      y: 50 + (Math.random() * 12 - 6),
+      y: targetY + (Math.random() * 6 - 3),
       scale: 1.0,
       rotation: Math.round(Math.random() * 20 - 10),
     };
@@ -340,12 +401,20 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   };
 
   const handleAddEmojiSticker = (emoji: string) => {
+    let targetY = 50;
+    if (stripViewMode === 'scroll' && previewContainerRef.current) {
+      const container = previewContainerRef.current;
+      const scrollCenter = container.scrollTop + container.clientHeight / 2;
+      const totalH = container.scrollHeight || 1;
+      targetY = Math.max(10, Math.min(90, Math.round((scrollCenter / totalH) * 100)));
+    }
+
     const newSticker: PhotostripUserSticker = {
       id: `stk-emoji-${Date.now()}`,
       icon: emoji,
       label: 'Emoji Charm',
       x: 50 + (Math.random() * 10 - 5),
-      y: 50 + (Math.random() * 10 - 5),
+      y: targetY + (Math.random() * 6 - 3),
       scale: 1.0,
       rotation: Math.round(Math.random() * 20 - 10),
     };
@@ -727,6 +796,31 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
     }
   };
 
+  // Dynamic pixel sizing for photostrip preview
+  const stripAspect = stripNaturalSize.width / (stripNaturalSize.height || 1);
+
+  const padX = 24;
+  const padY = 24;
+  const availW = Math.max(100, (containerSize.width || 480) - padX);
+  const availH = Math.max(100, (containerSize.height || 420) - padY);
+
+  let renderW = 0;
+  let renderH = 0;
+
+  if (stripViewMode === 'fit') {
+    const scale = Math.min(availW / stripNaturalSize.width, availH / stripNaturalSize.height);
+    renderW = Math.max(80, Math.round(stripNaturalSize.width * scale));
+    renderH = Math.max(120, Math.round(stripNaturalSize.height * scale));
+  } else {
+    // Scroll mode: zoomed in for comfortable pose-by-pose editing
+    const targetW = Math.max(280, Math.min(Math.round(availW * scrollZoom), 620));
+    renderW = targetW;
+    renderH = Math.round(targetW / stripAspect);
+  }
+
+  // Base sticker display size proportional to strip rendered width (140 / 820 ~= 17%)
+  const stickerBaseSize = Math.max(32, Math.min(96, Math.round(renderW * 0.19)));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
       <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-retro flex flex-col my-auto max-h-[98dvh] text-[#282A2B]">
@@ -906,48 +1000,151 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 min-h-0 flex-1 overflow-hidden my-1 sm:my-2">
           {/* Left: Interactive Preview & Canvas */}
           <div
-            className="flex-1 min-w-0 flex items-center justify-center bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] p-2 sm:p-4 h-[44dvh] sm:h-[48dvh] lg:h-[60vh] min-h-0 overflow-hidden relative shadow-inner touch-none select-none transition-all duration-300"
+            className="flex-1 min-w-0 flex flex-col bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] h-[48dvh] sm:h-[54dvh] lg:h-[62vh] min-h-0 overflow-hidden relative shadow-inner select-none transition-all duration-300"
             onClick={() => {
               setSelectedStickerId(null);
               setSelectedCardId(null);
             }}
           >
-            {/* Inspect Full Screen Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpandedPreview(true);
-              }}
-              className="absolute top-2 left-2 z-40 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4EFE6]/95 hover:bg-white text-[#282A2B] border-2 border-[#282A2B] text-[11px] sm:text-xs font-mono font-bold shadow-retro-sm transition active:scale-95"
-              title="Inspect photo in full screen"
-            >
-              <Maximize2 className="w-3.5 h-3.5 text-[#6BA3A9]" />
-              <span>Inspect Full Screen</span>
-            </button>
+            {/* Top Studio Canvas Controls Header */}
+            <div className="px-3 py-2 sm:px-4 sm:py-2 flex items-center justify-between border-b border-white/10 bg-black/30 shrink-0 z-30">
+              {/* Left: Inspect Full Screen Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpandedPreview(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4EFE6]/95 hover:bg-white text-[#282A2B] border-2 border-[#282A2B] text-[11px] sm:text-xs font-mono font-bold shadow-retro-sm transition active:scale-95 shrink-0"
+                title="Inspect photo in high-resolution full screen"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-[#6BA3A9]" />
+                <span className="hidden sm:inline">Inspect Full Screen</span>
+                <span className="sm:hidden">Inspect</span>
+              </button>
 
+              {/* Right: Studio Strip Canvas Controls */}
+              {activeTab === 'strip' ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  {isRenderingStrip && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#F4EFE6] border border-[#282A2B] text-[10px] text-[#282A2B] font-mono shadow-xs animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D67C65] animate-ping" />
+                      <span className="hidden sm:inline">Rendering</span>
+                    </div>
+                  )}
+
+                  {/* View Mode Switcher: Fit Strip vs Scroll Mode */}
+                  <div className="flex items-center bg-[#18191A] border border-white/15 p-0.5 rounded-xl shadow-xs">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStripViewMode('fit');
+                      }}
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                        stripViewMode === 'fit'
+                          ? 'bg-[#D67C65] text-white shadow-xs'
+                          : 'text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                      title="Fit entire photostrip in view (all poses visible at once)"
+                    >
+                      <Minimize2 className="w-3 h-3" />
+                      <span>Fit Strip</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStripViewMode('scroll');
+                      }}
+                      className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                        stripViewMode === 'scroll'
+                          ? 'bg-[#D67C65] text-white shadow-xs'
+                          : 'text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                      title="Zoom in and scroll poses to decorate up-close"
+                    >
+                      <ZoomIn className="w-3 h-3 text-[#DDA853]" />
+                      <span>Scroll Mode</span>
+                    </button>
+                  </div>
+
+                  {/* Zoom controls when in Scroll Mode */}
+                  {stripViewMode === 'scroll' && (
+                    <div className="hidden md:flex items-center bg-[#18191A] border border-white/15 rounded-xl p-0.5 text-white/80 text-[11px] font-mono">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setScrollZoom((z) => Math.max(1.1, Number((z - 0.25).toFixed(2))));
+                        }}
+                        className="p-1 hover:text-white hover:bg-white/10 rounded-lg transition"
+                        title="Zoom Out"
+                      >
+                        <ZoomOut className="w-3 h-3" />
+                      </button>
+                      <span className="px-1.5 font-bold">{Math.round((scrollZoom / 1.6) * 100)}%</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setScrollZoom((z) => Math.min(2.8, Number((z + 0.25).toFixed(2))));
+                        }}
+                        className="p-1 hover:text-white hover:bg-white/10 rounded-lg transition"
+                        title="Zoom In"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[10px] font-mono text-white/50 hidden sm:block">
+                  {activeTab === 'gif' ? 'Looping Animation' : 'Boomerang Video'}
+                </div>
+              )}
+            </div>
+
+            {/* Photostrip Canvas Viewport */}
             {activeTab === 'strip' && (
               <div
                 ref={previewContainerRef}
-                className="relative flex items-center justify-center w-full h-full min-h-0 min-w-0 overflow-hidden"
+                className={`relative flex-1 w-full min-h-0 min-w-0 select-none ${
+                  stripViewMode === 'scroll'
+                    ? 'overflow-y-auto overflow-x-hidden flex justify-center py-4 px-2 sm:px-6 scrollbar-thin scrollbar-thumb-[#D67C65] scrollbar-track-black/30'
+                    : 'overflow-hidden flex items-center justify-center p-2 sm:p-3'
+                }`}
+                style={{
+                  touchAction: stripViewMode === 'scroll' ? 'pan-y' : 'none',
+                }}
               >
                 {stripUrl ? (
                   <div
-                    className="relative inline-flex items-center justify-center select-none"
+                    className="relative select-none shrink-0 transition-[width,height] duration-150 ease-out"
                     style={{
-                      maxHeight: '100%',
-                      maxWidth: '100%',
+                      width: `${renderW}px`,
+                      height: `${renderH}px`,
+                      maxWidth: stripViewMode === 'fit' ? '100%' : undefined,
+                      maxHeight: stripViewMode === 'fit' ? '100%' : undefined,
                     }}
                   >
                     <img
                       ref={previewImgRef}
                       src={stripUrl}
                       alt="Photobooth Print"
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                          setStripNaturalSize({
+                            width: img.naturalWidth,
+                            height: img.naturalHeight,
+                          });
+                        }
+                      }}
                       style={{
-                        maxHeight: '100%',
-                        maxWidth: '100%',
-                        width: 'auto',
-                        height: 'auto',
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'contain',
                         display: 'block',
                       }}
@@ -956,7 +1153,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                     />
 
                     {/* Interactive Overlay Layer for Draggable Stickers & Movable Photo Cards */}
-                    <div className="absolute inset-0 pointer-events-auto">
+                    <div className="absolute inset-0 pointer-events-auto overflow-visible">
                       {/* Movable Photo Cards (when in Scrapbook Freeform mode) */}
                       {layout === 'scrapbook-freeform' &&
                         movableCards.map((card) => {
@@ -1036,16 +1233,25 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                                 : 'hover:ring-1 hover:ring-white/60 hover:bg-white/10 rounded-2xl z-20'
                             }`}
                           >
-                            {/* Sticker Visual */}
+                            {/* Sticker Visual scaled to match rendered strip */}
                             {st.url ? (
                               <img
                                 src={st.url}
                                 alt={st.label || 'Sticker'}
-                                className="w-14 h-14 sm:w-18 sm:h-18 object-contain pointer-events-none drop-shadow-md select-none"
+                                style={{
+                                  width: `${stickerBaseSize}px`,
+                                  height: `${stickerBaseSize}px`,
+                                }}
+                                className="object-contain pointer-events-none drop-shadow-md select-none"
                                 draggable={false}
                               />
                             ) : (
-                              <span className="text-3xl sm:text-5xl pointer-events-none drop-shadow-md select-none leading-none block">
+                              <span
+                                className="pointer-events-none drop-shadow-md select-none leading-none block"
+                                style={{
+                                  fontSize: `${Math.round(stickerBaseSize * 0.75)}px`,
+                                }}
+                              >
                                 {st.icon}
                               </span>
                             )}
@@ -1132,19 +1338,12 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                     <p className="text-xs font-mono">Composing photostrip...</p>
                   </div>
                 )}
-
-                {isRenderingStrip && (
-                  <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-[#F4EFE6] border border-[#282A2B] text-[10px] text-[#282A2B] font-mono flex items-center gap-1.5 shadow-retro-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#D67C65] animate-ping" />
-                    Updating Frame
-                  </div>
-                )}
               </div>
             )}
 
             {/* Looping Animated GIF View */}
             {activeTab === 'gif' && (
-              <div className="flex flex-col items-center justify-center w-full h-full min-h-0 overflow-hidden">
+              <div className="flex flex-col items-center justify-center flex-1 w-full min-h-0 overflow-hidden p-2 sm:p-4">
                 {isGeneratingGif ? (
                   <div className="flex flex-col items-center text-white/90">
                     <div className="w-10 h-10 rounded-full border-3 border-[#D67C65] border-t-transparent animate-spin mb-3" />
@@ -1189,7 +1388,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
             {/* Video Player View */}
             {activeTab === 'video' && (
-              <div className="flex flex-col items-center justify-center w-full h-full min-h-0 overflow-hidden">
+              <div className="flex flex-col items-center justify-center flex-1 w-full min-h-0 overflow-hidden p-2 sm:p-4">
                 {isGeneratingVideo ? (
                   <div className="flex flex-col items-center text-white/90">
                     <div className="w-10 h-10 rounded-full border-3 border-[#6BA3A9] border-t-transparent animate-spin mb-3" />
@@ -1239,7 +1438,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
 
           {/* Right Customization Drawer */}
-          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 overflow-hidden max-h-[44dvh] sm:max-h-[48dvh] lg:max-h-[60vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2 sm:p-3 shadow-retro-sm">
+          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 overflow-hidden max-h-[48dvh] sm:max-h-[54dvh] lg:max-h-[62vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2 sm:p-3 shadow-retro-sm">
             {/* Sub-tabs for sidebar */}
             <div className="flex items-center gap-1 p-1 bg-[#EBE4D5] rounded-xl border border-[#282A2B]/20 shrink-0">
               <button
