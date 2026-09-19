@@ -251,10 +251,10 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
 
           <button
             onClick={onToggleFullscreen}
-            className="p-1.5 sm:p-2 rounded-xl text-[#282A2B] hover:bg-[#EBE4D5] transition hidden lg:flex items-center justify-center"
+            className="p-1.5 sm:p-2 rounded-xl text-[#282A2B] hover:bg-[#EBE4D5] transition flex items-center justify-center min-w-[32px] min-h-[32px] sm:min-w-[36px] sm:min-h-[36px]"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" /> : <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />}
           </button>
 
           <button

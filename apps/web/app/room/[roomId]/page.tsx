@@ -517,16 +517,74 @@ export default function RoomPage() {
     }
   };
 
-  // Fullscreen toggle
-  const handleToggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
+  // Cross-browser and iOS-safe Fullscreen toggle
+  const handleToggleFullscreen = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    const doc: any = document;
+    const docEl: any = document.documentElement;
+
+    const isFs = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+
+    if (!isFs) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => setIsFullscreen(true));
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      } else {
+        // Fallback for iOS Safari & browsers without Fullscreen API: toggle app-level fullscreen
+        setIsFullscreen((prev) => !prev);
+      }
     } else {
-      document.exitFullscreen().catch(() => {});
-      setIsFullscreen(false);
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => setIsFullscreen(false));
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      } else {
+        setIsFullscreen(false);
+      }
     }
-  };
+  }, []);
+
+  // Sync fullscreen state with native browser events (Esc key, swipe gestures, etc.)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const handleFsChange = () => {
+      const doc: any = document;
+      const isFs = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    document.addEventListener('mozfullscreenchange', handleFsChange);
+    document.addEventListener('MSFullscreenChange', handleFsChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      document.removeEventListener('mozfullscreenchange', handleFsChange);
+      document.removeEventListener('MSFullscreenChange', handleFsChange);
+    };
+  }, []);
 
   // Leave room
   const handleLeaveRoom = () => {
@@ -589,9 +647,13 @@ export default function RoomPage() {
 
   // Step 3: The Main Shared Photobooth View
   return (
-    <main className="relative flex flex-col items-center justify-between w-full h-[100dvh] max-h-[100dvh] overflow-hidden retro-pattern py-1.5 sm:py-3 px-1 sm:px-2 select-none">
+    <main className={`relative flex flex-col items-center justify-between w-full h-[100dvh] max-h-[100dvh] overflow-hidden retro-pattern ${
+      isFullscreen ? 'py-1 px-1 sm:px-2' : 'py-1.5 sm:py-3 px-1 sm:px-2'
+    } select-none`}>
       {/* Top Bar: Retro Status & Room Details */}
-      <header className="w-full max-w-5xl px-2 sm:px-4 flex items-center justify-between z-30 pointer-events-auto shrink-0">
+      <header className={`w-full max-w-5xl px-2 sm:px-4 flex items-center justify-between z-30 pointer-events-auto shrink-0 transition-opacity ${
+        isFullscreen ? 'opacity-85 hover:opacity-100' : ''
+      }`}>
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           <button
             onClick={() => setInWaitingRoom(true)}
@@ -623,7 +685,9 @@ export default function RoomPage() {
       </header>
 
       {/* Center Hero: The Shared Photobooth Canvas */}
-      <div className="relative flex-1 w-full max-w-6xl px-1 sm:px-4 flex items-center justify-center min-h-0 z-10 overflow-hidden my-1">
+      <div className={`relative flex-1 w-full max-w-6xl px-1 sm:px-4 flex items-center justify-center min-h-0 z-10 overflow-hidden ${
+        isFullscreen ? 'my-0.5' : 'my-1'
+      }`}>
         <PhotoboothCanvas
           ref={canvasRef}
           room={room}

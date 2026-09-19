@@ -67,6 +67,19 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   const [isRetakeDropdownOpen, setIsRetakeDropdownOpen] = useState(false);
   // Full-screen/expanded view toggle for preview
   const [isExpandedPreview, setIsExpandedPreview] = useState(false);
+  const [inspectorZoom, setInspectorZoom] = useState(1.0);
+
+  // Escape key listener to exit full screen inspection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isExpandedPreview) {
+        setIsExpandedPreview(false);
+        setInspectorZoom(1.0);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExpandedPreview]);
 
   // Generate lightweight thumbnails for individual pose retakes
   const [thumbUrls, setThumbUrls] = useState<string[]>([]);
@@ -893,35 +906,24 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 min-h-0 flex-1 overflow-hidden my-1 sm:my-2">
           {/* Left: Interactive Preview & Canvas */}
           <div
-            className={`flex-1 min-w-0 flex items-center justify-center bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] p-2 sm:p-4 ${
-              isExpandedPreview ? 'h-[74dvh]' : 'h-[44dvh] sm:h-[48dvh] lg:h-auto'
-            } min-h-0 overflow-hidden relative shadow-inner touch-none select-none transition-all duration-300`}
+            className="flex-1 min-w-0 flex items-center justify-center bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] p-2 sm:p-4 h-[44dvh] sm:h-[48dvh] lg:h-[60vh] min-h-0 overflow-hidden relative shadow-inner touch-none select-none transition-all duration-300"
             onClick={() => {
               setSelectedStickerId(null);
               setSelectedCardId(null);
             }}
           >
-            {/* Quick Full-Preview Toggle Button in Corner */}
+            {/* Inspect Full Screen Button */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsExpandedPreview((prev) => !prev);
+                setIsExpandedPreview(true);
               }}
-              className="absolute top-2 left-2 z-40 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F4EFE6]/90 hover:bg-white text-[#282A2B] border border-[#282A2B] text-[10px] font-mono font-bold shadow-sm transition active:scale-95"
-              title={isExpandedPreview ? "Back to Studio Controls" : "Expand Full View"}
+              className="absolute top-2 left-2 z-40 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4EFE6]/95 hover:bg-white text-[#282A2B] border-2 border-[#282A2B] text-[11px] sm:text-xs font-mono font-bold shadow-retro-sm transition active:scale-95"
+              title="Inspect photo in full screen"
             >
-              {isExpandedPreview ? (
-                <>
-                  <Minimize2 className="w-3 h-3 text-[#D67C65]" />
-                  <span>Exit Full</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3 h-3 text-[#6BA3A9]" />
-                  <span>Full View</span>
-                </>
-              )}
+              <Maximize2 className="w-3.5 h-3.5 text-[#6BA3A9]" />
+              <span>Inspect Full Screen</span>
             </button>
 
             {activeTab === 'strip' && (
@@ -1236,10 +1238,8 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
             )}
           </div>
 
-          {/* Right Customization Drawer (hidden on mobile if expanded view is active) */}
-          <div className={`w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 overflow-hidden ${
-            isExpandedPreview ? 'hidden lg:flex' : 'flex'
-          } max-h-[44dvh] sm:max-h-[50dvh] lg:max-h-[62vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2 sm:p-3 shadow-retro-sm`}>
+          {/* Right Customization Drawer */}
+          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 overflow-hidden max-h-[44dvh] sm:max-h-[48dvh] lg:max-h-[60vh] bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2 sm:p-3 shadow-retro-sm">
             {/* Sub-tabs for sidebar */}
             <div className="flex items-center gap-1 p-1 bg-[#EBE4D5] rounded-xl border border-[#282A2B]/20 shrink-0">
               <button
@@ -1692,6 +1692,239 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dedicated Full-Screen Inspector Modal for Thorough Inspection on All Devices */}
+      {isExpandedPreview && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-[#141516]/98 backdrop-blur-md text-[#F4EFE6] select-none p-2 sm:p-4 animate-fadeIn">
+          {/* Inspector Header */}
+          <div className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-white/15 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#D67C65] border border-white/20 flex items-center justify-center text-white shrink-0 shadow-sm">
+                <Maximize2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="font-retro font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+                  FULL SCREEN INSPECT
+                  <span className="text-[10px] sm:text-xs font-mono font-normal text-white/60">
+                    ({activeTab === 'strip' ? 'Photostrip' : activeTab === 'gif' ? 'Looping GIF' : 'Video'})
+                  </span>
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Zoom Controls for Photostrip Inspection */}
+              {activeTab === 'strip' && (
+                <div className="hidden sm:flex items-center bg-white/10 rounded-xl p-0.5 border border-white/15 mr-1">
+                  <button
+                    type="button"
+                    onClick={() => setInspectorZoom((z) => Math.max(0.6, Number((z - 0.2).toFixed(1))))}
+                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-2 text-[11px] font-mono text-white/90">
+                    {Math.round(inspectorZoom * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setInspectorZoom((z) => Math.min(3.0, Number((z + 0.2).toFixed(1))))}
+                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                  {inspectorZoom !== 1.0 && (
+                    <button
+                      type="button"
+                      onClick={() => setInspectorZoom(1.0)}
+                      className="px-2 py-0.5 text-[10px] font-mono text-[#D67C65] hover:underline"
+                      title="Reset Zoom to 100%"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Format Switcher Pills */}
+              <div className="flex items-center bg-white/10 rounded-xl p-0.5 border border-white/15">
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('strip'); setInspectorZoom(1.0); }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                    activeTab === 'strip' ? 'bg-[#D67C65] text-white shadow-sm' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Strip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('gif'); setInspectorZoom(1.0); }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                    activeTab === 'gif' ? 'bg-[#D67C65] text-white shadow-sm' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  GIF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('video'); setInspectorZoom(1.0); }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition ${
+                    activeTab === 'video' ? 'bg-[#D67C65] text-white shadow-sm' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Video
+                </button>
+              </div>
+
+              {/* Exit Full Screen Button */}
+              <button
+                type="button"
+                onClick={() => { setIsExpandedPreview(false); setInspectorZoom(1.0); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4EFE6] text-[#282A2B] hover:bg-white text-xs font-mono font-bold shadow-retro-sm transition active:scale-95"
+                title="Exit Full Screen (Esc)"
+              >
+                <Minimize2 className="w-3.5 h-3.5 text-[#D67C65]" />
+                <span className="hidden sm:inline">Exit Full Screen</span>
+                <span className="sm:hidden">Exit</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Center Inspection Viewport */}
+          <div className="flex-1 w-full min-h-0 min-w-0 flex items-center justify-center p-2 sm:p-4 overflow-auto relative">
+            {activeTab === 'strip' && (
+              stripUrl ? (
+                <div
+                  className="relative flex items-center justify-center select-none transition-transform duration-150"
+                  style={{
+                    transform: `scale(${inspectorZoom})`,
+                    transformOrigin: 'center center',
+                    maxHeight: 'calc(100dvh - 140px)',
+                    maxWidth: 'calc(100vw - 32px)',
+                  }}
+                >
+                  <img
+                    src={stripUrl}
+                    alt="Full Photostrip Preview"
+                    style={{
+                      maxHeight: 'calc(100dvh - 140px)',
+                      maxWidth: 'calc(100vw - 32px)',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                    className="rounded-xl shadow-2xl pointer-events-none select-none"
+                    draggable={false}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-white/70">
+                  <div className="w-8 h-8 rounded-full border-2 border-[#D67C65] border-t-transparent animate-spin mb-2" />
+                  <p className="text-xs font-mono">Loading full strip preview...</p>
+                </div>
+              )
+            )}
+
+            {activeTab === 'gif' && (
+              gifUrl ? (
+                <div className="relative flex items-center justify-center select-none">
+                  <img
+                    src={gifUrl}
+                    alt="Full Looping GIF Preview"
+                    style={{
+                      maxHeight: 'calc(100dvh - 140px)',
+                      maxWidth: 'calc(100vw - 32px)',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                    className="rounded-xl shadow-2xl pointer-events-none select-none"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-white/70">
+                  <p className="text-xs font-mono">Generate GIF in studio to preview</p>
+                </div>
+              )
+            )}
+
+            {activeTab === 'video' && (
+              videoUrl ? (
+                <div className="relative flex items-center justify-center select-none">
+                  <video
+                    key={videoUrl}
+                    src={videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    controls
+                    style={{
+                      maxHeight: 'calc(100dvh - 140px)',
+                      maxWidth: 'calc(100vw - 32px)',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                    className="rounded-xl shadow-2xl"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-white/70">
+                  <p className="text-xs font-mono">Render video in studio to preview</p>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* Bottom Quick-Action Dock */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3 py-2 border-t border-white/15 shrink-0">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isExporting}
+              className="retro-btn-terracotta px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold text-white flex items-center gap-2 shadow-retro-sm active:translate-y-0.5"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Print</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={isExporting}
+              className="px-3 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold bg-[#F4EFE6] text-[#282A2B] border-2 border-[#282A2B] hover:bg-white flex items-center gap-1.5 shadow-retro-sm active:translate-y-0.5"
+            >
+              {hasCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              <span>{hasCopied ? 'Copied!' : 'Copy'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={isExporting}
+              className="px-3 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-retro font-bold bg-[#6BA3A9] text-white border-2 border-[#282A2B] hover:bg-[#5b8f95] flex items-center gap-1.5 shadow-retro-sm active:translate-y-0.5"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setIsExpandedPreview(false); setInspectorZoom(1.0); }}
+              className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold text-white/80 hover:text-white border border-white/20 hover:bg-white/10 transition"
+            >
+              Back to Studio
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
