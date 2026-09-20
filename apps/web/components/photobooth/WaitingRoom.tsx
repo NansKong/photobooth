@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { Participant, Room } from '@photobooth/shared';
-import { Copy, Check, Users, Sparkles, QrCode, ArrowRight, Video } from 'lucide-react';
+import { Copy, Check, Users, Sparkles, QrCode, ArrowRight, Video, Globe } from 'lucide-react';
 
 interface WaitingRoomProps {
   room: Room;
   selfParticipantId: string;
   onEnterPhotobooth: () => void;
   onOpenQrModal: () => void;
+  onOpenNetworkModal?: () => void;
   localStream: MediaStream | null;
 }
 
@@ -17,6 +18,7 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   selfParticipantId,
   onEnterPhotobooth,
   onOpenQrModal,
+  onOpenNetworkModal,
   localStream,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -88,6 +90,16 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
             >
               <QrCode className="w-4 h-4" />
             </button>
+
+            {onOpenNetworkModal && (
+              <button
+                onClick={onOpenNetworkModal}
+                className="p-2.5 rounded-xl retro-btn-cream text-[#282A2B]"
+                title="Configure TURN Relay & Network Settings"
+              >
+                <Globe className="w-4 h-4 text-[#6BA3A9]" />
+              </button>
+            )}
           </div>
         </div>
 

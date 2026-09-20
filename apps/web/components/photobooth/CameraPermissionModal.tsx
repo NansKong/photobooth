@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, AlertCircle, ArrowRight, Loader2, RefreshCw, Sparkles, SwitchCamera, Info } from 'lucide-react';
+import { Camera, AlertCircle, ArrowRight, Loader2, RefreshCw, Sparkles, SwitchCamera, Info, Globe } from 'lucide-react';
+import { NetworkSettingsModal } from './NetworkSettingsModal';
 
 interface CameraPermissionModalProps {
   name: string;
@@ -41,6 +42,7 @@ export const CameraPermissionModal: React.FC<CameraPermissionModalProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [isSecure, setIsSecure] = useState(true);
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -239,6 +241,16 @@ export const CameraPermissionModal: React.FC<CameraPermissionModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsNetworkModalOpen(true)}
+              className="text-[10px] font-bold text-[#282A2B] hover:text-[#D67C65] flex items-center gap-1 px-2 py-0.5 rounded-lg border border-[#282A2B]/20 bg-white/70 hover:bg-white transition"
+              title="Configure TURN Relay & Cross-Network Settings"
+            >
+              <Globe className="w-3 h-3 text-[#6BA3A9]" />
+              <span>Relay Setup</span>
+            </button>
+
             {!isConnected && onRetryConnection && (
               <button
                 type="button"
@@ -257,6 +269,12 @@ export const CameraPermissionModal: React.FC<CameraPermissionModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Network & Relay Settings Modal */}
+        <NetworkSettingsModal
+          isOpen={isNetworkModalOpen}
+          onClose={() => setIsNetworkModalOpen(false)}
+        />
 
         {/* Name Input & Join Form */}
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">

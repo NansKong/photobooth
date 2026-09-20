@@ -70,6 +70,58 @@ async function bootstrap() {
     });
   });
 
+  // Dynamic ICE / STUN / TURN server resolution endpoint
+  let serverMeteredCache: { servers: any[]; expiry: number } | null = null;
+  app.get('/api/ice-servers', async (req, res) => {
+    try {
+      if (config.meteredApiKey && config.meteredDomain) {
+        if (serverMeteredCache && serverMeteredCache.expiry > Date.now()) {
+          return res.json({ iceServers: serverMeteredCache.servers });
+        }
+        const domain = config.meteredDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        const response = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(config.meteredApiKey)}`);
+        if (response.ok) {
+          const servers = await response.json();
+          if (Array.isArray(servers) && servers.length > 0) {
+            serverMeteredCache = { servers, expiry: Date.now() + 1800 * 1000 };
+            return res.json({ iceServers: servers });
+          }
+        }
+      }
+
+      if (config.turnUrl) {
+        return res.json({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            {
+              urls: config.turnUrl.split(',').map((u) => u.trim()),
+              username: config.turnUsername || undefined,
+              credential: config.turnCredential || undefined,
+            },
+          ],
+        });
+      }
+
+      return res.json({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+        ],
+      });
+    } catch (err: any) {
+      console.error('[ICE] Error resolving ice servers:', err);
+      return res.json({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+        ],
+      });
+    }
+  });
+
   // Periodic room cleanup
   const cleanupInterval = setInterval(async () => {
     try {

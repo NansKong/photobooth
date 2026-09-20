@@ -28,6 +28,8 @@ import { CapturePreviewModal } from '@/components/photobooth/CapturePreviewModal
 import { WaitingRoom } from '@/components/photobooth/WaitingRoom';
 import { CameraPermissionModal } from '@/components/photobooth/CameraPermissionModal';
 import { QrModal } from '@/components/photobooth/QrModal';
+import { NetworkSettingsModal } from '@/components/photobooth/NetworkSettingsModal';
+import { Globe } from 'lucide-react';
 
 export default function RoomPage() {
   const params = useParams();
@@ -50,6 +52,7 @@ export default function RoomPage() {
   const [activeDrawer, setActiveDrawer] = useState<'env' | 'layout' | 'pos' | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isQrOpen, setIsQrOpen] = useState<boolean>(false);
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = useState<boolean>(false);
 
   // Networking Hooks
   const {
@@ -728,9 +731,14 @@ export default function RoomPage() {
           selfParticipantId={selfParticipantId || ''}
           onEnterPhotobooth={() => setInWaitingRoom(false)}
           onOpenQrModal={() => setIsQrOpen(true)}
+          onOpenNetworkModal={() => setIsNetworkModalOpen(true)}
           localStream={localStream}
         />
         {isQrOpen && <QrModal roomId={roomId} onClose={() => setIsQrOpen(false)} />}
+        <NetworkSettingsModal
+          isOpen={isNetworkModalOpen}
+          onClose={() => setIsNetworkModalOpen(false)}
+        />
       </>
     );
   }
@@ -767,6 +775,14 @@ export default function RoomPage() {
               Synced Shutter
             </span>
           )}
+          <button
+            onClick={() => setIsNetworkModalOpen(true)}
+            className="p-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-retro rounded-xl bg-[#F4EFE6] border-2 border-[#282A2B] text-[#282A2B] shadow-retro-sm hover:bg-[#EBE4D5] transition shrink-0 flex items-center gap-1"
+            title="Configure TURN Relay & Cross-Network Settings"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#6BA3A9]" />
+            <span className="hidden md:inline">Relay Setup</span>
+          </button>
           <button
             onClick={() => setIsQrOpen(true)}
             className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-retro rounded-xl retro-btn-terracotta transition shrink-0"
@@ -877,6 +893,12 @@ export default function RoomPage() {
 
       {/* Mobile QR Code Modal */}
       {isQrOpen && <QrModal roomId={room.id} onClose={() => setIsQrOpen(false)} />}
+
+      {/* Network & TURN Relay Modal */}
+      <NetworkSettingsModal
+        isOpen={isNetworkModalOpen}
+        onClose={() => setIsNetworkModalOpen(false)}
+      />
     </main>
   );
 }
