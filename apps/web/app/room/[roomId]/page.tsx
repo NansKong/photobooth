@@ -49,6 +49,8 @@ export default function RoomPage() {
   const [isStudioOpen, setIsStudioOpen] = useState<boolean>(false);
   const [retakeTargetIndex, setRetakeTargetIndex] = useState<number | null>(null);
   const retakeTargetIndexRef = useRef<number | null>(null);
+  const captureScheduledRef = useRef(false);
+  const capturedShotKeysRef = useRef<Set<string>>(new Set());
   const [activeDrawer, setActiveDrawer] = useState<'env' | 'layout' | 'pos' | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isQrOpen, setIsQrOpen] = useState<boolean>(false);
@@ -256,6 +258,7 @@ export default function RoomPage() {
     };
 
     const handleCaptureScheduled = (session: CaptureSession) => {
+      captureScheduledRef.current = true;
       setCaptureSession(session);
       setActiveDrawer(null); // close open menus for photo
     };
@@ -374,6 +377,9 @@ export default function RoomPage() {
 
   // Trigger Take Photo (Multi-shot session)
   const handleTakePhoto = () => {
+    if (captureSession) return;
+    captureScheduledRef.current = false;
+    capturedShotKeysRef.current.clear();
     retakeTargetIndexRef.current = null;
     setRetakeTargetIndex(null);
     setCapturedFrames([]);
@@ -410,11 +416,11 @@ export default function RoomPage() {
     if (!isLocalMode && socket && isConnected && roomId) {
       let acknowledged = false;
       const watchdog = setTimeout(() => {
-        if (!acknowledged) {
+        if (!acknowledged && !captureScheduledRef.current) {
           console.warn('[handleTakePhoto] Server capture timed out; falling back to local capture session');
           triggerLocalCapture();
         }
-      }, 800);
+      }, 5000);
 
       socket.emit(
         SocketEvents.CAPTURE_START,
@@ -438,6 +444,9 @@ export default function RoomPage() {
 
   // Trigger Retake of a Single Specific Photo/Pose (e.g. retake pose 2 without wiping other images)
   const handleRetakeSingle = (poseIndex: number) => {
+    if (captureSession) return;
+    captureScheduledRef.current = false;
+    capturedShotKeysRef.current.clear();
     retakeTargetIndexRef.current = poseIndex;
     setRetakeTargetIndex(poseIndex);
     setIsStudioOpen(false);
@@ -470,10 +479,10 @@ export default function RoomPage() {
     if (!isLocalMode && socket && isConnected && roomId) {
       let acknowledged = false;
       const watchdog = setTimeout(() => {
-        if (!acknowledged) {
+        if (!acknowledged && !captureScheduledRef.current) {
           triggerLocalSingle();
         }
-      }, 800);
+      }, 5000);
 
       socket.emit(
         SocketEvents.CAPTURE_START,
@@ -513,7 +522,10 @@ export default function RoomPage() {
   // Millisecond Synchronized Capture Trigger for each shot in the series
   const handleCaptureTrigger = useCallback(
     async (shotIndex: number, totalShots: number) => {
-      if (!room) return;
+      if (!room || !captureSession || shotIndex < 0 || shotIndex >= totalShots) return;
+      const shotKey = `${captureSession.id}:${shotIndex}`;
+      if (capturedShotKeysRef.current.has(shotKey)) return;
+      capturedShotKeysRef.current.add(shotKey);
 
       // Read video elements directly from the canvas ref (off-DOM elements)
       const videoElements =
@@ -555,7 +567,8 @@ export default function RoomPage() {
           setIsStudioOpen(true);
         } else {
           setCapturedFrames((prev) => {
-            const next = [...prev, offscreen];
+            const next = [...prev];
+            next[shotIndex] = offscreen;
             // If this was the final shot in the multi-shot session, open studio
             if (shotIndex + 1 >= totalShots) {
               setIsStudioOpen(true);

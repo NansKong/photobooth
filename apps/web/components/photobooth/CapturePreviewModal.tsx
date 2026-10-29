@@ -152,6 +152,8 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const [isRenderingStrip, setIsRenderingStrip] = useState(false);
 
+  const [gifError, setGifError] = useState<string | null>(null);
+  const gifAutoAttemptedRef = useRef(false);
   const [gifBlob, setGifBlob] = useState<Blob | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
@@ -313,6 +315,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   const generateGif = useCallback(async () => {
     if (capturedFrames.length === 0 || isGeneratingGif) return;
     setIsGeneratingGif(true);
+    setGifError(null);
 
     try {
       const blob = await createPhotoboothGif(capturedFrames, {
@@ -330,6 +333,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
       }
     } catch (err) {
       console.error('Failed to create photobooth GIF:', err);
+      setGifError('Could not encode the GIF. Try again or use a smaller set of poses.');
     } finally {
       setIsGeneratingGif(false);
     }
@@ -365,7 +369,8 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
   // Trigger GIF generation when switching to GIF tab if not yet generated
   useEffect(() => {
-    if (activeTab === 'gif' && !gifBlob && !isGeneratingGif) {
+    if (activeTab === 'gif' && !gifBlob && !gifAutoAttemptedRef.current) {
+      gifAutoAttemptedRef.current = true;
       generateGif();
     }
   }, [activeTab, gifBlob, isGeneratingGif, generateGif]);
@@ -459,6 +464,9 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
     const originY = st.y;
     const originScale = st.scale;
     const originRot = st.rotation;
+    const bounds = previewImgRef.current?.getBoundingClientRect();
+    if (!bounds || !bounds.width || !bounds.height) return;
+    let pendingFrame = 0;
 
     liveStateRef.current.set(id, {
       x: originX,
@@ -469,9 +477,6 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
     const onPointerMove = (ev: PointerEvent) => {
       ev.preventDefault();
-      const bounds = previewImgRef.current?.getBoundingClientRect();
-      if (!bounds || bounds.width === 0 || bounds.height === 0) return;
-
       const deltaPercentX = ((ev.clientX - startX) / bounds.width) * 100;
       const deltaPercentY = ((ev.clientY - startY) / bounds.height) * 100;
       const newX = Math.max(2, Math.min(98, originX + deltaPercentX));
@@ -483,15 +488,19 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         live.y = newY;
       }
 
-      const el = stickerElsRef.current.get(id);
-      if (el) {
-        el.style.left = `${newX}%`;
-        el.style.top = `${newY}%`;
-        el.style.transform = `translate(-50%, -50%) rotate(${originRot}deg) scale(${originScale})`;
-      }
+      if (!pendingFrame) pendingFrame = requestAnimationFrame(() => {
+        pendingFrame = 0;
+        const latest = liveStateRef.current.get(id);
+        const el = stickerElsRef.current.get(id);
+        if (el && latest) {
+          el.style.left = `${latest.x}%`;
+          el.style.top = `${latest.y}%`;
+        }
+      });
     };
 
     const onPointerUp = () => {
+      if (pendingFrame) cancelAnimationFrame(pendingFrame);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
@@ -1001,7 +1010,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
         <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 flex-1 lg:min-h-0 lg:overflow-hidden my-1 sm:my-2">
           {/* Left: Interactive Preview & Canvas */}
           <div
-            className="w-full flex-1 min-w-0 flex flex-col bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] h-[38dvh] sm:h-[46dvh] lg:h-[62vh] min-h-[280px] sm:min-h-[340px] overflow-hidden relative shadow-inner select-none transition-all duration-300 shrink-0"
+            className="w-full flex-1 min-w-0 flex flex-col bg-[#282A2B] rounded-2xl border-2 border-[#282A2B] h-[44dvh] sm:h-[50dvh] lg:h-[48vh] lg:max-h-[560px] min-h-[280px] sm:min-h-[340px] overflow-hidden relative shadow-inner select-none transition-all duration-300 shrink-0"
             onClick={() => {
               setSelectedStickerId(null);
               setSelectedCardId(null);
@@ -1249,7 +1258,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                               />
                             ) : (
                               <span
-                                className="pointer-events-none drop-shadow-md select-none leading-none block"
+                                className="pointer-events-none select-none leading-none block"
                                 style={{
                                   fontSize: `${Math.round(stickerBaseSize * 0.75)}px`,
                                 }}
@@ -1377,6 +1386,8 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                     </button>
                   </div>
                 ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    {gifError && <p role="alert" className="text-xs text-white text-center">{gifError}</p>}
                   <button
                     type="button"
                     onClick={generateGif}
@@ -1384,6 +1395,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                   >
                     Generate Looping GIF
                   </button>
+                  </div>
                 )}
               </div>
             )}
@@ -1440,7 +1452,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
 
           {/* Right Customization Drawer */}
-          <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2.5 sm:p-3 shadow-retro-sm lg:overflow-hidden lg:max-h-[62vh] shrink-0">
+          <div className="w-full lg:w-[340px] lg:shrink-0 flex flex-col gap-2 sm:gap-3 bg-white/70 rounded-2xl border-2 border-[#282A2B] p-2.5 sm:p-3 shadow-retro-sm lg:overflow-hidden lg:max-h-[48vh] shrink-0">
             {/* Sub-tabs for sidebar */}
             <div className="flex items-center gap-1 p-1 bg-[#EBE4D5] rounded-xl border border-[#282A2B]/20 shrink-0">
               <button
@@ -1566,8 +1578,8 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
                       {[
-                        { id: 'strip-1x4', label: '1x4 Strip (4 Poses)' },
-                        { id: 'strip-1x3', label: '1x3 Strip (3 Poses)' },
+                        { id: 'strip-1x4', label: 'Vertical Strip (All Poses)' },
+                        { id: 'strip-1x3', label: 'Three Pose Strip' },
                         { id: 'strip-twin', label: '2x4 Twin Strips' },
                         { id: 'grid-2x2', label: '2x2 Square Grid' },
                         { id: 'scrapbook-freeform', label: '🎀 Freeform Collage' },
@@ -1690,7 +1702,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                   {/* Cute Quick Charms Row */}
                   <div className="flex items-center gap-1.5 p-1.5 bg-[#F4EFE6] rounded-xl border border-[#282A2B]/20">
                     <span className="text-[10px] font-mono font-bold text-[#282A2B]/70 ml-1">Quick:</span>
-                    {['🎀', '🐱', '✨', '💖', '🌸', '🍒', '🪩', '⭐'].map((emoji) => (
+                    {['🎀', '✨', '💖', '🌸'].map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
@@ -1707,7 +1719,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                   <p className="text-[10px] text-[#282A2B]/60 font-mono text-center -mt-1">
                     Tap to add • Drag to move • Pinch to resize
                   </p>
-                  <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 max-h-[28dvh] sm:max-h-[38vh] overflow-y-auto p-1">
+                  <div className="grid grid-cols-4 gap-2 max-h-[28dvh] sm:max-h-[38vh] overflow-y-auto p-1">
                     {AVAILABLE_STICKERS.filter((s) => s.category === selectedStickerCategory).map((stk) => (
                       <button
                         key={stk.id}

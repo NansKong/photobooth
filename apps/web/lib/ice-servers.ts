@@ -8,7 +8,7 @@ export interface CustomTurnConfig {
 }
 
 export const DEFAULT_METERED_DOMAIN = 'photobooth_retro.metered.live';
-export const DEFAULT_METERED_API_KEY = '86aa18ee6ea2003b75d8f382dc50ebb3a327';
+export const DEFAULT_METERED_API_KEY = '';
 
 export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -16,16 +16,6 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
   { urls: 'stun:stun.relay.metered.ca:80' },
-  {
-    urls: [
-      'turn:global.relay.metered.ca:80',
-      'turn:global.relay.metered.ca:80?transport=tcp',
-      'turn:global.relay.metered.ca:443',
-      'turns:global.relay.metered.ca:443?transport=tcp',
-    ],
-    username: '1924e44fb24eb122b120e077',
-    credential: '3fV0+92357ccDUfw',
-  },
 ];
 
 const STORAGE_KEY = 'photobooth_custom_turn_config';
@@ -128,7 +118,7 @@ export async function resolveIceServers(socketBaseUrl?: string | null): Promise<
 
   // 2. Fetch latest ephemeral TURN credentials from Metered REST API
   const targetDomain = process.env.NEXT_PUBLIC_METERED_DOMAIN || DEFAULT_METERED_DOMAIN;
-  const targetApiKey = process.env.NEXT_PUBLIC_METERED_API_KEY || DEFAULT_METERED_API_KEY;
+  const targetApiKey = DEFAULT_METERED_API_KEY; // Never ship a TURN API key in the browser bundle.
 
   if (targetDomain && targetApiKey) {
     if (cachedMeteredServers && cachedMeteredServers.expiry > Date.now()) {
@@ -144,20 +134,7 @@ export async function resolveIceServers(socketBaseUrl?: string | null): Promise<
     }
   }
 
-  // 3. Check Next.js Environment Variables (Static TURN server)
-  const envTurnUrl = process.env.NEXT_PUBLIC_TURN_URL;
-  if (envTurnUrl) {
-    const urls = envTurnUrl.split(',').map((u) => u.trim());
-    return [
-      ...DEFAULT_ICE_SERVERS,
-      {
-        urls,
-        username: process.env.NEXT_PUBLIC_TURN_USERNAME || undefined,
-        credential: process.env.NEXT_PUBLIC_TURN_CREDENTIAL || undefined,
-      },
-    ];
-  }
-
+  // 3. Fetch relay credentials from the signaling server.
   // 4. Try fetching from backend signaling server endpoint if available
   if (socketBaseUrl && !socketBaseUrl.includes('localhost')) {
     try {

@@ -450,6 +450,7 @@ export async function renderCustomPhotostrip(
   // Determine strip dimensions
   let canvasW = 820;
   let canvasH = 2100;
+  const frameCount = Math.max(1, Math.min(6, capturedFrames.length));
 
   const isTwin = layout === 'strip-twin';
   const is3Shot = layout === 'strip-1x3';
@@ -468,6 +469,8 @@ export async function renderCustomPhotostrip(
   } else if (is3Shot) {
     canvasW = 820;
     canvasH = 1750;
+  } else if (!is2x2 && !isTwin) {
+    canvasH = 450 + frameCount * 410;
   }
 
   const canvas = document.createElement('canvas');
@@ -647,17 +650,17 @@ export async function renderCustomPhotostrip(
     }
   } else {
     // Calculate strip columns (1 column for single strip / 2 columns for twin strip)
-    const columns = isTwin ? 2 : 1;
-    const stripMarginX = isTwin ? 60 : 45;
+    const columns = isTwin || is2x2 ? 2 : 1;
+    const stripMarginX = isTwin || is2x2 ? 45 : 45;
     const stripMarginY = 50;
     const stripGap = 50;
-    const singleStripW = isTwin
+    const singleStripW = isTwin || is2x2
       ? (canvasW - 2 * stripMarginX - stripGap) / 2
       : canvasW - 2 * stripMarginX;
     const singleStripH = canvasH - 2 * stripMarginY;
 
     // Number of photo slots per column
-    const slotCount = is3Shot ? 3 : 4;
+    const slotCount = is2x2 ? Math.min(2, frameCount) : is3Shot ? Math.min(3, frameCount) : frameCount;
 
     for (let col = 0; col < columns; col++) {
       const stripX = stripMarginX + col * (singleStripW + stripGap);
@@ -797,8 +800,8 @@ export async function renderCustomPhotostrip(
       const slotY = photosTop + s * (slotH + slotGap);
 
       // Select frame from captured sequence
-      const frameIndex = (col * slotCount + s) % Math.max(1, capturedFrames.length);
-      const photoFrame = capturedFrames[frameIndex] || capturedFrames[0];
+      const frameIndex = isTwin ? s % frameCount : is2x2 ? col * 2 + s : s;
+      const photoFrame = capturedFrames[frameIndex];
 
       ctx.save();
 

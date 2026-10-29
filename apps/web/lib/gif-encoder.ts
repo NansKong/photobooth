@@ -85,43 +85,16 @@ export class GifEncoder {
   }
 
   private quantizeColors(rgbaPixels: Uint8ClampedArray): { palette: [number, number, number][]; indexedPixels: number[] } {
-    const paletteMap = new Map<number, number>();
-    const palette: [number, number, number][] = [];
+    // Fixed RGB 3-3-2 palette keeps encoding linear in pixel count.
+    const palette: [number, number, number][] = Array.from({ length: 256 }, (_, i) => [
+      Math.round(((i >> 5) & 7) * 255 / 7),
+      Math.round(((i >> 2) & 7) * 255 / 7),
+      Math.round((i & 3) * 255 / 3),
+    ]);
     const indexedPixels: number[] = new Array(this.width * this.height);
-
     for (let i = 0; i < rgbaPixels.length; i += 4) {
-      // Reduce 8-bit to 5-bit color channels (32 shades each) for fast 32768 palette mapping
-      const r = rgbaPixels[i] & 0xf8;
-      const g = rgbaPixels[i + 1] & 0xf8;
-      const b = rgbaPixels[i + 2] & 0xf8;
-      const key = (r << 16) | (g << 8) | b;
-
-      let idx = paletteMap.get(key);
-      if (idx === undefined) {
-        if (palette.length < 256) {
-          idx = palette.length;
-          palette.push([rgbaPixels[i], rgbaPixels[i + 1], rgbaPixels[i + 2]]);
-          paletteMap.set(key, idx);
-        } else {
-          // Find closest color in palette
-          let minDist = Infinity;
-          let bestIdx = 0;
-          for (let p = 0; p < palette.length; p++) {
-            const dr = rgbaPixels[i] - palette[p][0];
-            const dg = rgbaPixels[i + 1] - palette[p][1];
-            const db = rgbaPixels[i + 2] - palette[p][2];
-            const dist = dr * dr + dg * dg + db * db;
-            if (dist < minDist) {
-              minDist = dist;
-              bestIdx = p;
-            }
-          }
-          idx = bestIdx;
-        }
-      }
-      indexedPixels[i / 4] = idx;
+      indexedPixels[i / 4] = (rgbaPixels[i] & 0xe0) | ((rgbaPixels[i + 1] & 0xe0) >> 3) | (rgbaPixels[i + 2] >> 6);
     }
-
     return { palette, indexedPixels };
   }
 

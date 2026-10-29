@@ -27,8 +27,14 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
   const { playBeep, playShutterSound } = useAudioEffects();
 
   const totalShots = session.totalShots || 4;
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
   const triggeredShotsRef = useRef<Set<number>>(new Set());
   const lastBeepNumberRef = useRef<number | null>(null);
+  const toLocalTimeRef = useRef(toLocalTime);
+  const playBeepRef = useRef(playBeep);
+  const playShutterRef = useRef(playShutterSound);
+  useEffect(() => { toLocalTimeRef.current = toLocalTime; playBeepRef.current = playBeep; playShutterRef.current = playShutterSound; }, [toLocalTime, playBeep, playShutterSound]);
   const onCaptureTriggerRef = useRef(onCaptureTrigger);
   useEffect(() => { onCaptureTriggerRef.current = onCaptureTrigger; }, [onCaptureTrigger]);
 
@@ -36,13 +42,15 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
     triggeredShotsRef.current.clear();
     lastBeepNumberRef.current = null;
 
+    const currentSession = sessionRef.current;
+
     // Build timeline of shots
     const shotsList =
-      session.shots && session.shots.length > 0
-        ? session.shots
+      currentSession.shots && currentSession.shots.length > 0
+        ? currentSession.shots
         : Array.from({ length: totalShots }).map((_, i) => ({
             shotIndex: i,
-            targetTimestamp: session.captureTimestamp + i * ((session.durationMs || 3000) + 2500),
+            targetTimestamp: currentSession.captureTimestamp + i * ((currentSession.durationMs || 3000) + 2500),
           }));
 
     let animId: number;
@@ -58,9 +66,9 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
         return;
       }
 
-      const targetLocalTime = session.id.startsWith('local-')
+      const targetLocalTime = currentSession.id.startsWith('local-')
         ? activeShot.targetTimestamp
-        : toLocalTime(activeShot.targetTimestamp);
+        : toLocalTimeRef.current(activeShot.targetTimestamp);
       const diff = targetLocalTime - now;
 
       setCurrentPoseIndex(activeShot.shotIndex + 1);
@@ -70,7 +78,7 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
         triggeredShotsRef.current.add(activeShot.shotIndex);
         setDisplayNumber('📸');
         setIsFlashActive(true);
-        playShutterSound();
+        playShutterRef.current();
         onCaptureTriggerRef.current(activeShot.shotIndex, totalShots);
 
         // Flash fade out and brief intermission before next shot
@@ -96,9 +104,9 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
       if (secondsLeft !== lastBeepNumberRef.current) {
         lastBeepNumberRef.current = secondsLeft;
         if (secondsLeft === 1) {
-          playBeep(880, 150); // higher pitch on 1
+          playBeepRef.current(880, 150); // higher pitch on 1
         } else if (secondsLeft <= 3) {
-          playBeep(550, 100);
+          playBeepRef.current(550, 100);
         }
       }
 
@@ -110,7 +118,7 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [session, toLocalTime, totalShots, playBeep, playShutterSound]);
+  }, [session.id, totalShots]);
 
   return (
     <>
