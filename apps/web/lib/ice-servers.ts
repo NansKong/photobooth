@@ -116,24 +116,17 @@ export async function resolveIceServers(socketBaseUrl?: string | null): Promise<
     }
   }
 
-  // 2. Fetch latest ephemeral TURN credentials from Metered REST API
-  const targetDomain = process.env.NEXT_PUBLIC_METERED_DOMAIN || DEFAULT_METERED_DOMAIN;
-  const targetApiKey = DEFAULT_METERED_API_KEY; // Never ship a TURN API key in the browser bundle.
-
-  if (targetDomain && targetApiKey) {
-    if (cachedMeteredServers && cachedMeteredServers.expiry > Date.now()) {
-      return cachedMeteredServers.servers;
+  // Fetch short-lived relay credentials through our server-side proxy.
+  // The Metered API key must never be included in client JavaScript.
+  try {
+    const res = await fetch('/api/ice-servers', { cache: 'no-store', signal: AbortSignal.timeout(9000) });
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json?.iceServers) && json.iceServers.length > 0) {
+        return json.iceServers;
+      }
     }
-    const fetched = await fetchMeteredCredentials(targetDomain, targetApiKey);
-    if (fetched && fetched.length > 0) {
-      cachedMeteredServers = {
-        servers: fetched,
-        expiry: Date.now() + 1800 * 1000,
-      };
-      return fetched;
-    }
-  }
-
+  } catch {}
   // 3. Fetch relay credentials from the signaling server.
   // 4. Try fetching from backend signaling server endpoint if available
   if (socketBaseUrl && !socketBaseUrl.includes('localhost')) {
