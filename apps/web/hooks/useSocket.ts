@@ -104,11 +104,11 @@ export function useSocket() {
 
     try {
       const s = io(targetUrl, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 8,
+        transports: ['polling', 'websocket'],
+        reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 4000,
-        timeout: 8000,
+        reconnectionDelayMax: 10000,
+        timeout: 20000,
       });
 
       s.on('connect', () => {

@@ -109,41 +109,61 @@ export function applyPhotoFilter(
   filter: PhotoFilterId
 ) {
   if (filter === 'none') return;
-
-  const imgData = ctx.getImageData(x, y, w, h);
-  const d = imgData.data;
-
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i];
-    const g = d[i + 1];
-    const b = d[i + 2];
-
-    if (filter === 'noir') {
-      // High-contrast punchy black & white (Noir)
-      let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-      // S-curve contrast
-      gray = gray < 128 ? (gray * gray) / 128 : 255 - ((255 - gray) * (255 - gray)) / 128;
-      d[i] = gray;
-      d[i + 1] = gray;
-      d[i + 2] = gray;
-    } else if (filter === 'sepia') {
-      // Warm vintage 70s sepia
-      const tr = 0.393 * r + 0.769 * g + 0.189 * b;
-      const tg = 0.349 * r + 0.686 * g + 0.168 * b;
-      const tb = 0.272 * r + 0.534 * g + 0.131 * b;
-      d[i] = Math.min(255, tr * 1.05);
-      d[i + 1] = Math.min(255, tg * 0.95);
-      d[i + 2] = Math.min(255, tb * 0.82);
-    } else if (filter === 'film90s') {
-      // 90s disposable camera warm tones with subtle noise
-      const noise = (Math.random() - 0.5) * 14;
-      d[i] = Math.min(255, Math.max(0, r * 1.08 + 8 + noise));
-      d[i + 1] = Math.min(255, Math.max(0, g * 0.98 + 4 + noise));
-      d[i + 2] = Math.min(255, Math.max(0, b * 0.88 + 12 + noise));
+  const sx = Math.round(x), sy = Math.round(y);
+  const sw = Math.max(1, Math.round(w)), sh = Math.max(1, Math.round(h));
+  const source = ctx.getImageData(sx, sy, sw, sh);
+  const d = source.data;
+  const original = filter === 'fisheye' ? new Uint8ClampedArray(d) : null;
+  const clamp = (v: number) => Math.max(0, Math.min(255, v));
+  for (let py = 0; py < sh; py++) {
+    for (let px = 0; px < sw; px++) {
+      const i = (py * sw + px) * 4;
+      if (original) {
+        const nx = (px + 0.5 - sw / 2) / (sw / 2);
+        const ny = (py + 0.5 - sh / 2) / (sh / 2);
+        const radius = Math.hypot(nx, ny);
+        if (radius > 1) continue;
+        // Inverse radial mapping gives a broad, natural fisheye bulge.
+        const mapped = Math.atan(radius * 1.25) / Math.atan(1.25);
+        const factor = radius > 0 ? mapped / radius : 1;
+        const srcX = Math.max(0, Math.min(sw - 1, Math.round((nx * factor + 1) * sw / 2)));
+        const srcY = Math.max(0, Math.min(sh - 1, Math.round((ny * factor + 1) * sh / 2)));
+        const src = (srcY * sw + srcX) * 4;
+        d[i] = original[src]; d[i+1] = original[src+1]; d[i+2] = original[src+2];
+        continue;
+      }
+      const r = d[i], g = d[i+1], b = d[i+2];
+      const gray = 0.299*r + 0.587*g + 0.114*b;
+      let nr = r, ng = g, nb = b;
+      if (filter === 'noir') {
+        const v = gray < 128 ? gray*gray/128 : 255-(255-gray)*(255-gray)/128;
+        nr = ng = nb = v;
+      } else if (filter === 'sepia') {
+        nr = (0.393*r + 0.769*g + 0.189*b)*1.05;
+        ng = (0.349*r + 0.686*g + 0.168*b)*0.95;
+        nb = (0.272*r + 0.534*g + 0.131*b)*0.82;
+      } else if (filter === 'film90s') {
+        // Coordinate based grain stays stable while dragging stickers or previewing.
+        const grain = ((px * 13 + py * 17) % 17 - 8) * 0.8;
+        nr = r*1.08 + 8 + grain; ng = g*0.98 + 4 + grain; nb = b*0.88 + 12 + grain;
+      } else if (filter === 'angelcore') {
+        nr = gray*0.42 + r*0.58 + 13; ng = gray*0.40 + g*0.60 + 11; nb = gray*0.38 + b*0.62 + 16;
+      } else if (filter === 'vintage') {
+        nr = gray*0.22 + r*0.78 + 12; ng = gray*0.26 + g*0.74 + 6; nb = gray*0.35 + b*0.65 - 12;
+      } else if (filter === 'warm-glow') {
+        nr = r*1.06 + 12; ng = g*1.02 + 6; nb = b*0.93;
+      } else if (filter === 'pastel') {
+        nr = gray*0.30 + r*0.70 + 22; ng = gray*0.30 + g*0.70 + 20; nb = gray*0.30 + b*0.70 + 24;
+      } else if (filter === 'old-vhs') {
+        const line = py % 4 === 0 ? 0.87 : 1;
+        nr = (gray*0.30 + r*0.70 + 5)*line;
+        ng = (gray*0.34 + g*0.66 + 3)*line;
+        nb = (gray*0.28 + b*0.72 + 9)*line;
+      }
+      d[i] = clamp(nr); d[i+1] = clamp(ng); d[i+2] = clamp(nb);
     }
   }
-
-  ctx.putImageData(imgData, x, y);
+  ctx.putImageData(source, sx, sy);
 }
 
 /**
@@ -427,6 +447,84 @@ function drawDecorativeStickers(
   ctx.restore();
 }
 
+
+function drawReferenceTheme(
+  ctx: CanvasRenderingContext2D, theme: PhotostripThemeId,
+  x: number, y: number, w: number, h: number,
+  photosTop: number, photosHeight: number, count: number
+) {
+  ctx.save();
+  const center = x + w / 2;
+  const red = '#8b1325';
+  const cream = '#fff7ea';
+  const title = theme === 'camera-party' ? 'MEMORIES IN FOCUS'
+    : theme === 'jazz-red' ? '7:77 SELFS'
+    : theme === 'record-zine' ? 'ABOUT YOU'
+    : theme === 'love-collage' ? 'love: the little things'
+    : theme === 'love-letter' ? 'favorite person'
+    : 'OUR MEMORY BOARD';
+
+  if (theme === 'love-letter' || theme === 'memory-board') {
+    // Paper grain and small woven marks, scaled to any strip height.
+    ctx.fillStyle = theme === 'memory-board' ? 'rgba(118,80,49,0.07)' : 'rgba(122,25,40,0.045)';
+    for (let py = y + 8; py < y + h - 8; py += 17)
+      for (let px = x + 8; px < x + w - 8; px += 17)
+        ctx.fillRect(px, py, 2, 2);
+    if (theme === 'love-letter') {
+      ctx.strokeStyle = 'rgba(144,69,75,0.18)'; ctx.lineWidth = 2;
+      for (let py = y + 84; py < y + h - 35; py += 36) {
+        ctx.beginPath(); ctx.moveTo(x + 18, py); ctx.lineTo(x + w - 18, py); ctx.stroke();
+      }
+    }
+  }
+
+  if (theme === 'jazz-red' || theme === 'record-zine') {
+    ctx.fillStyle = theme === 'record-zine' ? '#f7f5ee' : cream;
+    ctx.font = `900 ${w < 500 ? 30 : 42}px Georgia, serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(title, center, y + 72, w - 42);
+    ctx.font = '13px monospace';
+    ctx.fillText(theme === 'jazz-red' ? '♪  THE SOUNDTRACK TO TONIGHT  ♪' : 'SIDE A  ·  THE MOMENTS WE KEEP', center, y + 110, w - 36);
+    if (theme === 'record-zine') {
+      ctx.strokeStyle = '#f7f5ee'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(x + 28, y + 132); ctx.lineTo(x + w - 28, y + 132); ctx.stroke();
+    }
+  } else if (theme === 'camera-party') {
+    // Instant camera silhouette above the first slot.
+    const cw = Math.min(w * 0.55, 360), ch = 112;
+    const cx = center - cw / 2, cy = y + 16;
+    ctx.fillStyle = '#e9e7e2'; roundRect(ctx, cx, cy, cw, ch, 16); ctx.fill();
+    ctx.strokeStyle = '#8d8b89'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#252528'; ctx.beginPath(); ctx.arc(center, cy + 55, 42, 0, 2*Math.PI); ctx.fill();
+    ctx.strokeStyle = '#696b69'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(center, cy + 55, 27, 0, 2*Math.PI); ctx.stroke();
+    ctx.fillStyle = '#be2024'; ctx.beginPath(); ctx.arc(cx + 32, cy + 84, 15, 0, 2*Math.PI); ctx.fill();
+    ctx.fillStyle = '#353638'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right'; ctx.fillText('One Step 2', cx + cw - 15, cy + 91);
+  } else {
+    ctx.fillStyle = theme === 'love-collage' ? '#522d32' : red;
+    ctx.textAlign = 'center'; ctx.font = `italic bold ${w < 500 ? 28 : 38}px Georgia, serif`;
+    ctx.fillText(title, center, y + 72, w - 50);
+    ctx.font = '22px Georgia, serif';
+    ctx.fillText('♥   ✦   ♥', center, y + 113);
+  }
+
+  // Repeated accents follow slot separators, so each photo count feels intentional.
+  const slotGap = 20;
+  const slotH = (photosHeight - (count - 1) * slotGap) / count;
+  for (let i = 0; i < count - 1; i++) {
+    const yy = photosTop + (i + 1) * slotH + i * slotGap + slotGap / 2 + 5;
+    ctx.textAlign = 'center'; ctx.font = 'bold 17px Georgia, serif';
+    ctx.fillStyle = theme === 'record-zine' || theme === 'jazz-red' ? cream : red;
+    ctx.fillText(theme === 'jazz-red' ? '♪  ✦  ♪' : theme === 'record-zine' ? 'SIDE B  •  00:00' : '♥  ✦  ♥', center, yy, w - 45);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = theme === 'record-zine' || theme === 'jazz-red' ? cream : red;
+  ctx.font = 'italic bold 26px Georgia, serif';
+  ctx.fillText(theme === 'camera-party' ? 'good things are coming' : title, center, y + h - 72, w - 45);
+  ctx.font = '13px monospace';
+  ctx.fillText('★  save the moments  ★', center, y + h - 40, w - 45);
+  ctx.restore();
+}
+
 /**
  * Main Photostrip Canvas Compositor
  */
@@ -465,7 +563,7 @@ export async function renderCustomPhotostrip(
     canvasH = 2100;
   } else if (is2x2) {
     canvasW = 1200;
-    canvasH = 1450;
+    canvasH = 450 + Math.ceil(frameCount / 2) * 620;
   } else if (is3Shot) {
     canvasW = 820;
     canvasH = 1750;
@@ -504,6 +602,13 @@ export async function renderCustomPhotostrip(
     ctx.fillRect(0, 0, canvasW, canvasH);
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(40, 40, canvasW - 80, canvasH - 80);
+  } else if (theme === 'camera-party' || theme === 'jazz-red' || theme === 'love-letter') {
+    ctx.fillStyle = theme === 'love-letter' ? '#f5e9d5' : '#7a1020';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+  } else if (theme === 'record-zine') {
+    ctx.fillStyle = '#e8e5e0'; ctx.fillRect(0, 0, canvasW, canvasH);
+  } else if (theme === 'love-collage' || theme === 'memory-board') {
+    ctx.fillStyle = '#e8d6bd'; ctx.fillRect(0, 0, canvasW, canvasH);
   } else if (theme === 'retro-patterns') {
     // Tartan plaid background
     ctx.fillStyle = '#7f1d1d';
@@ -529,7 +634,11 @@ export async function renderCustomPhotostrip(
 
   if (isFreeform) {
     // Draw Freeform Scrapbook Tabletop
-    ctx.fillStyle = '#f8f4eb';
+    const freeformBg: Partial<Record<PhotostripThemeId, string>> = {
+      'camera-party': '#f9f3ed', 'jazz-red': '#711627', 'record-zine': '#17191d',
+      'love-collage': '#f9f0e6', 'love-letter': '#f6e7d2', 'memory-board': '#e4ceb0',
+    };
+    ctx.fillStyle = freeformBg[theme] || '#f8f4eb';
     ctx.fillRect(0, 0, canvasW, canvasH);
 
     // Subtle checkered / linen grid pattern
@@ -548,12 +657,17 @@ export async function renderCustomPhotostrip(
 
     // Top Header
     ctx.save();
-    ctx.fillStyle = '#282a2b';
+    ctx.fillStyle = theme === 'jazz-red' || theme === 'record-zine' ? '#fff6e8' : '#282a2b';
     ctx.font = 'italic 700 48px Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText(title || 'Our Scrapbook Memories', canvasW / 2, 85);
+    const freeformTitle: Partial<Record<PhotostripThemeId, string>> = {
+      'camera-party': 'Memories in Focus', 'jazz-red': '7:77 SELFS',
+      'record-zine': 'About You', 'love-collage': 'love: the little things',
+      'love-letter': 'favorite person', 'memory-board': 'Our Memory Board',
+    };
+    ctx.fillText(freeformTitle[theme] || title || 'Our Scrapbook Memories', canvasW / 2, 85);
     ctx.font = 'bold 16px monospace';
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = theme === 'jazz-red' || theme === 'record-zine' ? '#dfcbbd' : '#64748b';
     ctx.fillText(dateStr || new Date().toDateString(), canvasW / 2, 120);
     ctx.restore();
 
@@ -627,8 +741,15 @@ export async function renderCustomPhotostrip(
         const scale = Math.max(photoW / frame.width, photoH / frame.height);
         const dw = frame.width * scale;
         const dh = frame.height * scale;
-        ctx.drawImage(frame, photoX + (photoW - dw) / 2, photoY + (photoH - dh) / 2, dw, dh);
-        applyPhotoFilter(ctx, photoX, photoY, photoW, photoH, filter);
+        // Filter an offscreen photo before the card is rotated. putImageData on the
+        // main canvas would ignore the card transform and paint outside its frame.
+        const photoCanvas = document.createElement('canvas');
+        photoCanvas.width = Math.round(photoW);
+        photoCanvas.height = Math.round(photoH);
+        const photoCtx = photoCanvas.getContext('2d')!;
+        photoCtx.drawImage(frame, (photoW - dw) / 2, (photoH - dh) / 2, dw, dh);
+        applyPhotoFilter(photoCtx, 0, 0, photoCanvas.width, photoCanvas.height, filter);
+        ctx.drawImage(photoCanvas, photoX, photoY, photoW, photoH);
       }
       ctx.restore();
 
@@ -650,7 +771,7 @@ export async function renderCustomPhotostrip(
     }
   } else {
     // Calculate strip columns (1 column for single strip / 2 columns for twin strip)
-    const columns = isTwin || is2x2 ? 2 : 1;
+    const columns = isTwin || (is2x2 && frameCount > 1) ? 2 : 1;
     const stripMarginX = isTwin || is2x2 ? 45 : 45;
     const stripMarginY = 50;
     const stripGap = 50;
@@ -659,10 +780,9 @@ export async function renderCustomPhotostrip(
       : canvasW - 2 * stripMarginX;
     const singleStripH = canvasH - 2 * stripMarginY;
 
-    // Number of photo slots per column
-    const slotCount = is2x2 ? Math.min(2, frameCount) : is3Shot ? Math.min(3, frameCount) : frameCount;
-
     for (let col = 0; col < columns; col++) {
+      // An odd photo count never creates an empty placeholder slot.
+      const slotCount = is2x2 ? Math.ceil((frameCount - col) / 2) : is3Shot ? Math.min(3, frameCount) : frameCount;
       const stripX = stripMarginX + col * (singleStripW + stripGap);
       const stripY = stripMarginY;
       const stripW = singleStripW;
@@ -679,8 +799,12 @@ export async function renderCustomPhotostrip(
       stripBgColor = '#831843'; // Deep wine right strip
     } else if (theme === 'y2k-zine') {
       stripBgColor = '#f8fafc';
-    } else if (theme === 'classic-film') {
+    } else if (theme === 'classic-film' || theme === 'record-zine') {
       stripBgColor = '#09090b';
+    } else if (theme === 'jazz-red') {
+      stripBgColor = '#68121d';
+    } else if (theme === 'love-letter' || theme === 'love-collage' || theme === 'memory-board') {
+      stripBgColor = '#fff9ee';
     }
 
     roundRect(ctx, stripX, stripY, stripW, stripH, 18);
@@ -706,6 +830,11 @@ export async function renderCustomPhotostrip(
     const footerH = is3Shot ? 150 : 180;
     const photosTop = stripY + headerH;
     const photosHeight = stripH - headerH - footerH;
+
+    // Reference-inspired themes share the same flexible photo slots.
+    if (['camera-party','jazz-red','record-zine','love-collage','love-letter','memory-board'].includes(theme)) {
+      drawReferenceTheme(ctx, theme, stripX, stripY, stripW, stripH, photosTop, photosHeight, slotCount);
+    }
 
     // Draw Theme Header Details
     ctx.save();
@@ -800,7 +929,7 @@ export async function renderCustomPhotostrip(
       const slotY = photosTop + s * (slotH + slotGap);
 
       // Select frame from captured sequence
-      const frameIndex = isTwin ? s % frameCount : is2x2 ? col * 2 + s : s;
+      const frameIndex = isTwin ? s % frameCount : is2x2 ? col + 2 * s : s;
       const photoFrame = capturedFrames[frameIndex];
 
       ctx.save();

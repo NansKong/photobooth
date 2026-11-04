@@ -197,7 +197,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
     switch (l) {
       case 'strip-twin': return { width: 1480, height: 2100 };
       case 'strip-1x3': return { width: 820, height: 1750 };
-      case 'grid-2x2': return { width: 1200, height: 1450 };
+      case 'grid-2x2': return { width: 1200, height: 450 + Math.ceil(capturedFrames.length / 2) * 620 };
       case 'scrapbook-freeform': return { width: 1400, height: 1400 };
       case 'strip-1x4':
       default: return { width: 820, height: 2100 };
@@ -830,6 +830,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
   // Base sticker display size proportional to strip rendered width (140 / 820 ~= 17%)
   const stickerBaseSize = Math.max(28, Math.min(96, Math.round(renderW * 0.19)));
+  const selectedSticker = stickers.find((item) => item.id === selectedStickerId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
@@ -844,7 +845,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
               <h2 className="font-retro font-bold text-base sm:text-xl text-[#282A2B] flex items-center gap-1.5 sm:gap-2">
                 PHOTOBOOTH STUDIO 📸
                 <span className="text-[10px] sm:text-xs font-normal text-[#282A2B]/70 font-mono">
-                  {capturedFrames.length} poses
+                  {capturedFrames.length} {capturedFrames.length === 1 ? 'pose' : 'poses'}
                 </span>
               </h2>
               <p className="text-[11px] sm:text-xs text-[#282A2B]/70 font-mono hidden sm:block">
@@ -1212,8 +1213,6 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                       {/* Draggable User Stickers Overlay */}
                       {stickers.map((st) => {
                         const isSelected = selectedStickerId === st.id;
-                        const controlsLeft = st.x > 75 ? 'right-0' : 'left-0';
-                        const controlsTop = st.y < 22 ? 'top-full mt-2' : '-top-11';
                         return (
                           <div
                             key={st.id}
@@ -1222,6 +1221,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                               else stickerElsRef.current.delete(st.id);
                             }}
                             onPointerDown={(e) => handleStartDragSticker(st.id, e)}
+                            onClick={(e) => e.stopPropagation()}
                             onTouchStart={(e) => handleTouchStart(st.id, e, st.scale)}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
@@ -1238,11 +1238,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                               transform: `translate(-50%, -50%) rotate(${st.rotation}deg) scale(${st.scale})`,
                               touchAction: 'none',
                             }}
-                            className={`absolute cursor-grab active:cursor-grabbing p-1.5 select-none transition-shadow ${
-                              isSelected
-                                ? 'ring-2 ring-[#D67C65] ring-offset-1 rounded-2xl bg-white/25 backdrop-blur-xs shadow-xl z-30'
-                                : 'hover:ring-1 hover:ring-white/60 hover:bg-white/10 rounded-2xl z-20'
-                            }`}
+                            className={`absolute cursor-grab active:cursor-grabbing p-1 select-none touch-none ${isSelected ? 'outline outline-2 outline-[#D67C65] rounded-lg z-30' : 'z-20'}`}
                           >
                             {/* Sticker Visual scaled to match rendered strip */}
                             {st.url ? (
@@ -1267,80 +1263,10 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                               </span>
                             )}
 
-                            {/* Floating Controls & Drag Handles when Sticker is Selected */}
-                            {isSelected && (
-                              <>
-                                {/* Corner Resize Handle (Bottom-Right) */}
-                                <div
-                                  onPointerDown={(e) => handleStartResize(st.id, e)}
-                                  className="absolute -bottom-3 -right-3 w-7 h-7 rounded-full bg-[#D67C65] text-white border-2 border-[#282A2B] shadow-retro-sm flex items-center justify-center cursor-nwse-resize z-40 touch-none hover:scale-110 active:scale-95 transition-transform"
-                                  title="Drag to resize sticker"
-                                >
-                                  <Scaling className="w-3.5 h-3.5 pointer-events-none" />
-                                </div>
-
-                                {/* Top Rotation Handle */}
-                                <div
-                                  onPointerDown={(e) => handleStartRotate(st.id, e)}
-                                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[#6BA3A9] text-white border-2 border-[#282A2B] shadow-retro-sm flex items-center justify-center cursor-grab active:cursor-grabbing z-40 touch-none hover:scale-110 active:scale-95 transition-transform"
-                                  title="Drag to rotate sticker"
-                                >
-                                  <RotateCw className="w-3 h-3 pointer-events-none" />
-                                </div>
-
-                                {/* Floating Action Pill Toolbar */}
-                                <div
-                                  className={`absolute ${controlsTop} ${controlsLeft} flex items-center gap-1 bg-[#F4EFE6] border-2 border-[#282A2B] rounded-full px-2 py-1 shadow-retro z-50 whitespace-nowrap`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onPointerDown={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateSticker(st.id, { scale: Math.min(3.5, Number((st.scale + 0.2).toFixed(2))) })}
-                                    className="p-1.5 text-[#282A2B] hover:text-[#D67C65] active:scale-90 transition rounded-full hover:bg-white"
-                                    title="Enlarge (+)"
-                                  >
-                                    <ZoomIn className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateSticker(st.id, { scale: Math.max(0.3, Number((st.scale - 0.2).toFixed(2))) })}
-                                    className="p-1.5 text-[#282A2B] hover:text-[#D67C65] active:scale-90 transition rounded-full hover:bg-white"
-                                    title="Shrink (-)"
-                                  >
-                                    <ZoomOut className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateSticker(st.id, { rotation: (st.rotation + 15) % 360 })}
-                                    className="p-1.5 text-[#282A2B] hover:text-[#D67C65] active:scale-90 transition rounded-full hover:bg-white"
-                                    title="Rotate +15°"
-                                  >
-                                    <RotateCw className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateSticker(st.id, { rotation: (st.rotation - 15 + 360) % 360 })}
-                                    className="p-1.5 text-[#282A2B] hover:text-[#D67C65] active:scale-90 transition rounded-full hover:bg-white"
-                                    title="Rotate -15°"
-                                  >
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                  </button>
-                                  <div className="w-[1px] h-3.5 bg-[#282A2B]/20 mx-0.5" />
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleRemoveSticker(st.id, e)}
-                                    className="p-1.5 text-red-600 hover:text-red-700 active:scale-90 transition rounded-full hover:bg-red-50"
-                                    title="Delete Sticker"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </>
-                            )}
                           </div>
                         );
                       })}
+
                     </div>
                   </div>
                 ) : (
@@ -1350,6 +1276,23 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'strip' && stripUrl && (
+              selectedSticker && (
+                        <div
+                          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-xl border border-[#282A2B] bg-[#F4EFE6] px-2 py-1 shadow-retro-sm"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          aria-label="Selected sticker controls"
+                        >
+                          <span className="hidden sm:inline px-1 text-[10px] font-mono font-bold">Drag to move</span>
+                          <button type="button" onClick={() => handleUpdateSticker(selectedSticker.id, { scale: Math.max(0.3, Number((selectedSticker.scale - 0.2).toFixed(2))) })} className="p-2 rounded-lg hover:bg-white" aria-label="Make sticker smaller"><ZoomOut className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => handleUpdateSticker(selectedSticker.id, { scale: Math.min(3.5, Number((selectedSticker.scale + 0.2).toFixed(2))) })} className="p-2 rounded-lg hover:bg-white" aria-label="Make sticker larger"><ZoomIn className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => handleUpdateSticker(selectedSticker.id, { rotation: (selectedSticker.rotation + 15) % 360 })} className="p-2 rounded-lg hover:bg-white" aria-label="Rotate sticker"><RotateCw className="w-4 h-4" /></button>
+                          <button type="button" onClick={(e) => handleRemoveSticker(selectedSticker.id, e)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" aria-label="Remove sticker"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+              )
             )}
 
             {/* Looping Animated GIF View */}
@@ -1518,6 +1461,12 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                         { id: 'boothy-call', label: '🔴 Boothy Call', desc: 'Polka Dots & Circles' },
                         { id: 'retro-patterns', label: '🏁 Tartan Plaid', desc: '90s Punk & Leopard' },
                         { id: 'classic-film', label: '🎞️ Analog 35mm', desc: 'Kodak Filmstrip' },
+                        { id: 'camera-party', label: '📷 Camera Party', desc: 'Red ribbon & instant camera' },
+                        { id: 'jazz-red', label: '🎸 Jazz Red', desc: 'Music & burgundy' },
+                        { id: 'record-zine', label: '💿 Record Zine', desc: 'Black & white music print' },
+                        { id: 'love-collage', label: '💐 Love Collage', desc: 'Flowers & keepsakes' },
+                        { id: 'love-letter', label: '💌 Love Letter', desc: 'Paper & handwritten hearts' },
+                        { id: 'memory-board', label: '🧸 Memory Board', desc: 'Linen, tickets & hearts' },
                       ].map((t) => (
                         <button
                           key={t.id}
@@ -1581,7 +1530,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                         { id: 'strip-1x4', label: 'Vertical Strip (All Poses)' },
                         { id: 'strip-1x3', label: 'Three Pose Strip' },
                         { id: 'strip-twin', label: '2x4 Twin Strips' },
-                        { id: 'grid-2x2', label: '2x2 Square Grid' },
+                        { id: 'grid-2x2', label: 'Dynamic Photo Grid' },
                         { id: 'scrapbook-freeform', label: '🎀 Freeform Collage' },
                       ].map((l) => (
                         <button
@@ -1609,12 +1558,18 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
                       <Wand2 className="w-3.5 h-3.5 text-[#DDA853]" />
                       <span>Photo Filter</span>
                     </label>
-                    <div className="grid grid-cols-4 gap-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {[
                         { id: 'none', label: 'Natural' },
                         { id: 'noir', label: 'Noir B&W' },
                         { id: 'sepia', label: 'Sepia' },
                         { id: 'film90s', label: '90s Film' },
+                        { id: 'angelcore', label: 'Angelcore' },
+                        { id: 'vintage', label: 'Vintage' },
+                        { id: 'warm-glow', label: 'Warm Glow' },
+                        { id: 'pastel', label: 'Pastel' },
+                        { id: 'old-vhs', label: 'Old VHS' },
+                        { id: 'fisheye', label: 'Fisheye' },
                       ].map((f) => (
                         <button
                           key={f.id}

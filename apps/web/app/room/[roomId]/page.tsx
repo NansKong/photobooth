@@ -63,6 +63,7 @@ export default function RoomPage() {
     isStandalone,
     connectionError,
     reconnect,
+    resolvedUrl,
   } = useSocket();
   const { isSynchronized, toLocalTime } = useClockSync(socket, isConnected);
   const {
@@ -85,7 +86,8 @@ export default function RoomPage() {
   } = useMediaDevices({ autoStart: true });
 
   const participants = room?.participants || [];
-  const { remoteStreams } = useWebRTC(socket, selfParticipantId, participants, localStream);
+  const [iceConfigVersion, setIceConfigVersion] = useState(0);
+  const { remoteStreams } = useWebRTC(socket, selfParticipantId, participants, localStream, resolvedUrl, iceConfigVersion);
 
   // Ref to PhotoboothCanvas so we can read its off-DOM video elements at capture time (BUG-2)
   const canvasRef = useRef<PhotoboothCanvasHandle | null>(null);
@@ -272,7 +274,7 @@ export default function RoomPage() {
     };
 
     const handleSocketConnect = () => {
-      if (roomId) {
+      if (hasEnteredRoom && roomId) {
         const storedParticipantId =
           typeof window !== 'undefined'
             ? sessionStorage.getItem(`photobooth_pid_${roomId}`) || selfParticipantId || ''
@@ -318,7 +320,7 @@ export default function RoomPage() {
       socket.off(SocketEvents.CAPTURE_CANCELLED, handleCaptureCancelled);
       socket.off(SocketEvents.CAPTURE_FINISHED, handleCaptureFinished);
     };
-  }, [socket, roomId, userName, selfParticipantId]);
+  }, [socket, roomId, userName, selfParticipantId, hasEnteredRoom]);
 
   // Position updates handler
   const handleUpdatePosition = useCallback(
@@ -751,6 +753,8 @@ export default function RoomPage() {
         <NetworkSettingsModal
           isOpen={isNetworkModalOpen}
           onClose={() => setIsNetworkModalOpen(false)}
+          onConfigChanged={() => setIceConfigVersion((version) => version + 1)}
+          socketBaseUrl={resolvedUrl}
         />
       </>
     );
@@ -911,6 +915,8 @@ export default function RoomPage() {
       <NetworkSettingsModal
         isOpen={isNetworkModalOpen}
         onClose={() => setIsNetworkModalOpen(false)}
+        onConfigChanged={() => setIceConfigVersion((version) => version + 1)}
+        socketBaseUrl={resolvedUrl}
       />
     </main>
   );

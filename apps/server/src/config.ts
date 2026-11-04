@@ -14,7 +14,7 @@ export const config = {
   // Metered or custom TURN configuration
   meteredApiKey: process.env.METERED_API_KEY || '',
   meteredDomain: process.env.METERED_DOMAIN || 'photobooth_retro.metered.live',
-  turnUrl: process.env.TURN_URL || 'turn:global.relay.metered.ca:80,turn:global.relay.metered.ca:443,turns:global.relay.metered.ca:443?transport=tcp',
+  turnUrl: process.env.TURN_URL || '',
   turnUsername: process.env.TURN_USERNAME || '',
   turnCredential: process.env.TURN_CREDENTIAL || '',
 };

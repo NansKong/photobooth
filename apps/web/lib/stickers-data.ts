@@ -11,7 +11,7 @@ import manifest from '../public/stickers/manifest.json';
 export const STICKER_CATEGORIES = [
   { id: 'cats', label: '🐱 Cats & Kittens' },
   { id: 'glam', label: '🪩 Y2K & Glam' },
-  { id: 'pretty', label: '🎀 Bows & Balloons' },
+  { id: 'pretty', label: '🎀 Bows & Stars' },
   { id: 'flowers', label: '🌸 Fresh Blooms' },
   { id: 'charms', label: '✨ Vintage Buttons' },
 ] as const;
@@ -25,7 +25,7 @@ export const AVAILABLE_STICKERS: StickerItem[] = (manifest as any[]).map((m) => 
   else cat = 'pretty';
 
   // Format a friendly label
-  const label = m.id
+  const label = m.label || m.id
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c: string) => c.toUpperCase());
 

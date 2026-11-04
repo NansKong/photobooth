@@ -1,3 +1,5 @@
+import type { PhotoFilterId } from '@photobooth/shared';
+import { applyPhotoFilter } from './photostrip-renderer';
 /**
  * Lightweight pure TypeScript GIF89a animated encoder with LZW compression.
  * Zero external dependencies, runs directly in browser.
@@ -205,7 +207,7 @@ export interface PhotoboothGifOptions {
   width?: number;
   height?: number;
   delayMs?: number;
-  filter?: 'none' | 'noir' | 'sepia' | 'film90s';
+  filter?: PhotoFilterId;
   stickers?: any[];
 }
 
@@ -296,31 +298,7 @@ export async function createPhotoboothGif(
     ctx.drawImage(frame, dx, dy, sw, sh);
 
     // Apply color filter if selected
-    if (filter !== 'none') {
-      const imgData = ctx.getImageData(0, 0, width, height);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i];
-        const g = d[i + 1];
-        const b = d[i + 2];
-        if (filter === 'noir') {
-          let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          gray = gray < 128 ? (gray * gray) / 128 : 255 - ((255 - gray) * (255 - gray)) / 128;
-          d[i] = gray;
-          d[i + 1] = gray;
-          d[i + 2] = gray;
-        } else if (filter === 'sepia') {
-          d[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
-          d[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
-          d[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
-        } else if (filter === 'film90s') {
-          d[i] = Math.min(255, r * 1.06 + 6);
-          d[i + 1] = Math.min(255, g * 0.98 + 3);
-          d[i + 2] = Math.min(255, b * 0.88 + 10);
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-    }
+    if (filter !== 'none') applyPhotoFilter(ctx, 0, 0, width, height, filter);
 
     // Draw stickers onto each frame
     for (const { img, sticker } of loadedStickerImages) {

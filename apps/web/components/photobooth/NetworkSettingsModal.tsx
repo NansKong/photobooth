@@ -27,12 +27,14 @@ interface NetworkSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfigChanged?: () => void;
+  socketBaseUrl?: string | null;
 }
 
 export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
   isOpen,
   onClose,
   onConfigChanged,
+  socketBaseUrl,
 }) => {
   const [mode, setMode] = useState<'default' | 'metered' | 'custom'>('default');
   const [meteredDomain, setMeteredDomain] = useState('');
@@ -113,7 +115,7 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
       };
       saveTurnConfig(tempConfig);
 
-      const servers = await resolveIceServers();
+      const servers = await resolveIceServers(socketBaseUrl);
       const result = await testIceConnectivity(servers);
       setDiagnosticResult(result);
     } catch (err: any) {

@@ -9,13 +9,17 @@ export function useWebRTC(
   socket: Socket | null,
   selfParticipantId: string | null,
   participants: Participant[],
-  localStream: MediaStream | null
+  localStream: MediaStream | null,
+  socketBaseUrl: string | null,
+  iceConfigVersion = 0
 ) {
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [peerConnections, setPeerConnections] = useState<Record<string, RTCPeerConnection>>({});
 
   // Dynamic ICE configuration
   const iceServersRef = useRef<RTCIceServer[]>(DEFAULT_ICE_SERVERS);
+  const [configuredIceKey, setConfiguredIceKey] = useState<string | null>(null);
+  const requestedIceKey = `${socketBaseUrl ?? ''}:${iceConfigVersion}`;
 
   const pcMapRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
@@ -28,19 +32,31 @@ export function useWebRTC(
     localStreamRef.current = localStream;
   }, [localStream]);
 
-  // Load configured ICE servers (STUN + TURN Relay) on startup
+  // Resolve relay credentials before starting negotiation. Refresh active peers when
+  // the user changes network settings so a page reload is not required.
   useEffect(() => {
     let mounted = true;
-    resolveIceServers().then((servers) => {
-      if (mounted && servers.length > 0) {
-        iceServersRef.current = servers;
-        console.log(`[WebRTC] Initialized ${servers.length} ICE servers (STUN/TURN)`);
-      }
+    resolveIceServers(socketBaseUrl).then((servers) => {
+      if (!mounted) return;
+      iceServersRef.current = servers.length > 0 ? servers : DEFAULT_ICE_SERVERS;
+      pcMapRef.current.forEach((pc, peerId) => {
+        if (pc.signalingState === 'closed') return;
+        try {
+          pc.setConfiguration({ ...pc.getConfiguration(), iceServers: iceServersRef.current });
+          if ((selfParticipantId || '') < peerId && typeof pc.restartIce === 'function') {
+            pc.restartIce();
+          }
+        } catch (error) {
+          console.warn('[WebRTC] Could not refresh ICE configuration:', error);
+        }
+      });
+      setConfiguredIceKey(requestedIceKey);
+      console.log(`[WebRTC] Initialized ${iceServersRef.current.length} ICE servers`);
     });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [socketBaseUrl, iceConfigVersion, requestedIceKey, selfParticipantId]);
 
   // Helper to create and configure a peer connection using W3C Perfect Negotiation
   const getOrCreatePeerConnection = useCallback(
@@ -214,7 +230,7 @@ export function useWebRTC(
 
   // Maintain peer connections for all participants in the room
   useEffect(() => {
-    if (!socket || !selfParticipantId) return;
+    if (!socket || !selfParticipantId || configuredIceKey !== requestedIceKey) return;
 
     participants.forEach((participant) => {
       if (participant.id === selfParticipantId) return;
@@ -261,11 +277,11 @@ export function useWebRTC(
         });
       }
     });
-  }, [participants, selfParticipantId, socket, getOrCreatePeerConnection]);
+  }, [participants, selfParticipantId, socket, getOrCreatePeerConnection, configuredIceKey, requestedIceKey]);
 
   // Handle incoming signaling messages from Socket.IO with W3C Perfect Negotiation
   useEffect(() => {
-    if (!socket || !selfParticipantId) return;
+    if (!socket || !selfParticipantId || configuredIceKey !== requestedIceKey) return;
 
     const handleSignal = async (signal: WebRTCSignalData) => {
       if (signal.targetId !== selfParticipantId) return;
@@ -362,7 +378,7 @@ export function useWebRTC(
     return () => {
       socket.off(SocketEvents.WEBRTC_SIGNAL, handleSignal);
     };
-  }, [socket, selfParticipantId, getOrCreatePeerConnection]);
+  }, [socket, selfParticipantId, getOrCreatePeerConnection, configuredIceKey, requestedIceKey]);
 
   return {
     remoteStreams,

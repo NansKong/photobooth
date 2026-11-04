@@ -143,7 +143,14 @@ export async function resolveIceServers(socketBaseUrl?: string | null): Promise<
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json?.iceServers) && json.iceServers.length > 0) {
-          return json.iceServers;
+          // An uncredentialed TURN URL cannot relay media. Keep working STUN
+          // entries and ignore the server's placeholder TURN configuration.
+          const usable = json.iceServers.filter((server: RTCIceServer) => {
+            const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+            const usesTurn = urls.some((url) => typeof url === 'string' && /^turns?:/i.test(url));
+            return !usesTurn || Boolean(server.username && server.credential);
+          });
+          if (usable.length > 0) return usable;
         }
       }
     } catch {}

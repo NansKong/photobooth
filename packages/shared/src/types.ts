@@ -89,6 +89,12 @@ export type PhotostripThemeId =
   | 'boothy-call'
   | 'retro-patterns'
   | 'classic-film'
+  | 'camera-party'
+  | 'jazz-red'
+  | 'record-zine'
+  | 'love-collage'
+  | 'love-letter'
+  | 'memory-board'
   | 'custom-upload';
 
 export type PhotostripLayoutId =
@@ -102,7 +108,13 @@ export type PhotoFilterId =
   | 'none'
   | 'noir'
   | 'sepia'
-  | 'film90s';
+  | 'film90s'
+  | 'angelcore'
+  | 'vintage'
+  | 'warm-glow'
+  | 'pastel'
+  | 'old-vhs'
+  | 'fisheye';
 
 export interface PhotostripSticker {
   id: string;

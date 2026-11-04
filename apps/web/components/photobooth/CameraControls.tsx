@@ -71,7 +71,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   onOpenShare,
 }) => {
   return (
-    <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full max-w-2xl mx-auto px-1 sm:px-4 pointer-events-auto select-none">
+    <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full max-w-3xl mx-auto px-1 sm:px-4 pointer-events-auto select-none">
       {/* Top Controls Bar: Shot Count & Clicker Mode */}
       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
         {/* Shot Count Selection Pill Selector */}
@@ -136,7 +136,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
       </div>
 
       {/* Primary Floating Retro Action Bar */}
-      <div className="bg-[#F4EFE6] px-2 sm:px-4 py-1.5 sm:py-2 rounded-2xl flex items-center justify-between gap-1 sm:gap-3 shadow-retro border-2 border-[#282A2B] w-full max-w-full">
+      <div className="bg-[#F4EFE6] px-2 sm:px-4 py-1.5 sm:py-2 rounded-2xl flex flex-wrap items-center justify-between gap-1 sm:gap-3 shadow-retro border-2 border-[#282A2B] w-full max-w-full">
         {/* Left Action Group: Customization Drawers */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0">
           <button
