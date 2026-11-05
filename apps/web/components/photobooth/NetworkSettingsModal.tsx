@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  ExternalLink,
   ShieldCheck,
   Server,
   Zap,
@@ -36,9 +35,7 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
   onConfigChanged,
   socketBaseUrl,
 }) => {
-  const [mode, setMode] = useState<'default' | 'metered' | 'custom'>('default');
-  const [meteredDomain, setMeteredDomain] = useState('');
-  const [meteredApiKey, setMeteredApiKey] = useState('');
+  const [mode, setMode] = useState<'default' | 'custom'>('default');
   const [turnUrls, setTurnUrls] = useState('');
   const [turnUsername, setTurnUsername] = useState('');
   const [turnCredential, setTurnCredential] = useState('');
@@ -52,9 +49,7 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
     if (!isOpen) return;
     const saved = getSavedTurnConfig();
     if (saved) {
-      setMode(saved.mode || 'default');
-      setMeteredDomain(saved.meteredDomain || '');
-      setMeteredApiKey(saved.meteredApiKey || '');
+      setMode(saved.mode === 'custom' ? 'custom' : 'default');
       setTurnUrls(saved.turnUrls || '');
       setTurnUsername(saved.turnUsername || '');
       setTurnCredential(saved.turnCredential || '');
@@ -70,8 +65,6 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
   const handleSave = () => {
     const config: CustomTurnConfig = {
       mode,
-      meteredDomain: meteredDomain.trim(),
-      meteredApiKey: meteredApiKey.trim(),
       turnUrls: turnUrls.trim(),
       turnUsername: turnUsername.trim(),
       turnCredential: turnCredential.trim(),
@@ -88,13 +81,11 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
   const handleReset = () => {
     clearTurnConfig();
     setMode('default');
-    setMeteredDomain('');
-    setMeteredApiKey('');
     setTurnUrls('');
     setTurnUsername('');
     setTurnCredential('');
     setDiagnosticResult(null);
-    setStatusMessage('Reset to default STUN configuration.');
+    setStatusMessage('Hosted Metered TURN restored.');
     if (onConfigChanged) onConfigChanged();
   };
 
@@ -104,18 +95,10 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
     setStatusMessage(null);
 
     try {
-      // Temporarily build target servers for test
-      const tempConfig: CustomTurnConfig = {
-        mode,
-        meteredDomain: meteredDomain.trim(),
-        meteredApiKey: meteredApiKey.trim(),
-        turnUrls: turnUrls.trim(),
-        turnUsername: turnUsername.trim(),
-        turnCredential: turnCredential.trim(),
-      };
-      saveTurnConfig(tempConfig);
-
-      const servers = await resolveIceServers(socketBaseUrl);
+      const customUrls = turnUrls.split('\n').map((url) => url.trim()).filter(Boolean);
+      const servers = mode === 'custom' && customUrls.length > 0
+        ? [{ urls: customUrls, username: turnUsername.trim(), credential: turnCredential.trim() }]
+        : await resolveIceServers(socketBaseUrl);
       const result = await testIceConnectivity(servers);
       setDiagnosticResult(result);
     } catch (err: any) {
@@ -166,7 +149,7 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
           <label className="block text-xs font-retro text-[#282A2B] uppercase tracking-wider mb-1.5">
             Relay Provider Mode
           </label>
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#EBE4D5] border border-[#282A2B]/30 text-xs font-retro">
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#EBE4D5] border border-[#282A2B]/30 text-xs font-retro">
             <button
               type="button"
               onClick={() => setMode('default')}
@@ -176,18 +159,7 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
                   : 'text-[#282A2B]/70 hover:text-[#282A2B]'
               }`}
             >
-              Default (STUN)
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('metered')}
-              className={`py-1.5 px-2 rounded-lg text-center transition ${
-                mode === 'metered'
-                  ? 'bg-white text-[#282A2B] shadow-sm font-bold border border-[#282A2B]'
-                  : 'text-[#282A2B]/70 hover:text-[#282A2B]'
-              }`}
-            >
-              Metered (Free)
+              Hosted TURN
             </button>
             <button
               type="button"
@@ -202,53 +174,6 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Mode B: Metered Configuration */}
-        {mode === 'metered' && (
-          <div className="mb-4 p-3.5 rounded-xl bg-white border border-[#282A2B]/20 space-y-2.5 animate-fadeIn">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="font-bold text-[#282A2B]">Metered Video Free TURN</span>
-              <a
-                href="https://dashboard.metered.ca/signup"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[#D67C65] hover:underline flex items-center gap-1 font-semibold"
-              >
-                <span>Get Free Key (50GB)</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-[#282A2B]/80 mb-0.5">
-                App Domain
-              </label>
-              <input
-                type="text"
-                value={meteredDomain}
-                onChange={(e) => setMeteredDomain(e.target.value)}
-                placeholder="e.g. my-booth.metered.live"
-                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-[#282A2B]/30 bg-[#F4EFE6] focus:outline-none focus:border-[#D67C65]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono text-[#282A2B]/80 mb-0.5">
-                API Key
-              </label>
-              <input
-                type="password"
-                value={meteredApiKey}
-                onChange={(e) => setMeteredApiKey(e.target.value)}
-                placeholder="Paste your Metered API key"
-                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-[#282A2B]/30 bg-[#F4EFE6] focus:outline-none focus:border-[#D67C65]"
-              />
-            </div>
-            <p className="text-[10px] text-[#282A2B]/60 font-mono">
-              Credentials are authenticated dynamically via Metered REST API and cached locally.
-            </p>
-          </div>
-        )}
 
         {/* Mode C: Custom TURN Configuration */}
         {mode === 'custom' && (
@@ -300,10 +225,10 @@ export const NetworkSettingsModal: React.FC<NetworkSettingsModalProps> = ({
           <div className="mb-4 p-3 rounded-xl bg-white border border-[#282A2B]/20 text-xs font-mono text-[#282A2B]/80">
             <p className="flex items-center gap-1.5 font-bold text-[#282A2B] mb-1">
               <Server className="w-3.5 h-3.5 text-[#6BA3A9]" />
-              Standard STUN Mode
+              Hosted Metered TURN
             </p>
             <p className="text-[11px]">
-              Uses Google & Cloudflare public STUN servers. Works reliably when participants are on the same Wi-Fi or when either peer is on mobile IPv6. For two laptops across different restricted home networks, switch to <strong>Metered</strong> or <strong>Custom TURN</strong>.
+              TURN relay is configured for everyone. No API key is needed here. The booth uses direct STUN when possible and Metered TURN when a relay is required. If you have your own relay, choose <strong>Custom TURN</strong>.
             </p>
           </div>
         )}

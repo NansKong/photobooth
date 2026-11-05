@@ -1,14 +1,9 @@
 export interface CustomTurnConfig {
-  mode: 'default' | 'metered' | 'custom';
-  meteredDomain?: string; // e.g. "myapp.metered.live"
-  meteredApiKey?: string;
+  mode: 'default' | 'custom';
   turnUrls?: string; // e.g. "turn:relay.example.com:443?transport=tcp"
   turnUsername?: string;
   turnCredential?: string;
 }
-
-export const DEFAULT_METERED_DOMAIN = 'photobooth_retro.metered.live';
-export const DEFAULT_METERED_API_KEY = '';
 
 export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -28,7 +23,12 @@ export function getSavedTurnConfig(): CustomTurnConfig | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (parsed.mode === 'metered') {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -51,33 +51,6 @@ export function clearTurnConfig(): void {
 }
 
 /**
- * Fetches dynamic credentials from a Metered Video application.
- */
-async function fetchMeteredCredentials(
-  domain: string,
-  apiKey: string
-): Promise<RTCIceServer[] | null> {
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  const url = `https://${cleanDomain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`;
-
-  try {
-    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-    if (!res.ok) {
-      console.warn(`[ICE] Metered API returned status ${res.status}`);
-      return null;
-    }
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      return data;
-    }
-    return null;
-  } catch (err) {
-    console.warn('[ICE] Failed to fetch Metered credentials:', err);
-    return null;
-  }
-}
-
-/**
  * Resolves the optimal list of ICE servers (STUN + TURN Relay) based on:
  * 1. User manual in-app override in localStorage
  * 2. Next.js environment variables
@@ -88,19 +61,7 @@ export async function resolveIceServers(socketBaseUrl?: string | null): Promise<
   // 1. Check user manual configuration in localStorage
   const saved = getSavedTurnConfig();
   if (saved) {
-    if (saved.mode === 'metered' && saved.meteredDomain && saved.meteredApiKey) {
-      if (cachedMeteredServers && cachedMeteredServers.expiry > Date.now()) {
-        return cachedMeteredServers.servers;
-      }
-      const fetched = await fetchMeteredCredentials(saved.meteredDomain, saved.meteredApiKey);
-      if (fetched) {
-        cachedMeteredServers = {
-          servers: fetched,
-          expiry: Date.now() + 1800 * 1000, // cache for 30 minutes
-        };
-        return fetched;
-      }
-    } else if (saved.mode === 'custom' && saved.turnUrls) {
+    if (saved.mode === 'custom' && saved.turnUrls) {
       const urls = saved.turnUrls
         .split('\n')
         .map((u) => u.trim())
