@@ -31,8 +31,10 @@ import {
   Scaling,
   Maximize2,
   Minimize2,
+  MessageCircle,
 } from 'lucide-react';
 import {
+  ChatMessage,
   PhotoFilterId,
   PhotostripLayoutId,
   PhotostripThemeId,
@@ -46,12 +48,17 @@ import { createPhotoboothGif } from '@/lib/gif-encoder';
 import { createPhotoboothVideo } from '@/lib/video-generator';
 import { downloadImageBlob, copyImageToClipboard, shareImageBlob } from '@/lib/export-utils';
 import { AVAILABLE_STICKERS, STICKER_CATEGORIES } from '@/lib/stickers-data';
+import { RoomChatPanel } from './RoomChatPanel';
 
 interface CapturePreviewModalProps {
   capturedFrames: (ImageBitmap | HTMLCanvasElement)[];
   roomId: string;
   onRetake: () => void;
   onRetakeSingle?: (index: number) => void;
+  chatMessages: ChatMessage[];
+  onSendChatMessage: (text: string) => boolean;
+  canChat: boolean;
+  selfParticipantId: string | null;
 }
 
 export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
@@ -59,9 +66,14 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
   roomId,
   onRetake,
   onRetakeSingle,
+  chatMessages,
+  onSendChatMessage,
+  canChat,
+  selfParticipantId,
 }) => {
   // Main Studio View Tabs
   const [activeTab, setActiveTab] = useState<'strip' | 'gif' | 'video'>('strip');
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Retake dropdown toggle
   const [isRetakeDropdownOpen, setIsRetakeDropdownOpen] = useState(false);
@@ -834,7 +846,7 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-[#282A2B]/85 backdrop-blur-sm animate-fadeIn overflow-y-auto select-none">
-      <div className="relative w-full max-w-6xl bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-retro flex flex-col my-auto max-h-[100dvh] sm:max-h-[98dvh] overflow-y-auto text-[#282A2B]">
+      <div className="relative w-full max-w-[1440px] bg-[#F4EFE6] border-2 sm:border-3 border-[#282A2B] rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-retro flex flex-col my-auto max-h-[100dvh] sm:max-h-[98dvh] overflow-y-auto text-[#282A2B]">
         {/* Header Bar */}
         <div className="flex items-center justify-between pb-2 sm:pb-3 border-b-2 border-[#282A2B]/15 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -855,6 +867,10 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <button type="button" onClick={() => setIsChatOpen(true)} className="lg:hidden flex items-center gap-1 rounded-xl border-2 border-[#282A2B] bg-white px-2.5 py-1.5 font-mono text-xs font-bold" aria-label="Open room chat">
+              <MessageCircle className="h-4 w-4 text-[#D67C65]" />
+              <span className="hidden sm:inline">Chat</span>
+            </button>
             {/* Quick Retake Dropdown Menu */}
             <div className="relative">
               <button
@@ -1784,7 +1800,28 @@ export const CapturePreviewModal: React.FC<CapturePreviewModalProps> = ({
               )}
             </div>
           </div>
+          <RoomChatPanel
+            messages={chatMessages}
+            selfParticipantId={selfParticipantId}
+            onSendMessage={onSendChatMessage}
+            canChat={canChat}
+            context="review"
+            className="hidden lg:flex lg:w-[260px] xl:w-[300px] lg:shrink-0 lg:h-[48vh] lg:max-h-[560px]"
+          />
         </div>
+        {isChatOpen && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-end bg-[#282A2B]/65 p-2 lg:hidden">
+            <RoomChatPanel
+              messages={chatMessages}
+              selfParticipantId={selfParticipantId}
+              onSendMessage={onSendChatMessage}
+              canChat={canChat}
+              context="review"
+              className="h-[min(650px,90dvh)] w-[min(390px,100%)]"
+              onClose={() => setIsChatOpen(false)}
+            />
+          </div>
+        )}
 
         {/* Action Footer Buttons */}
         <div className="sticky sm:static bottom-0 bg-[#F4EFE6]/95 backdrop-blur-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 w-full pt-2 sm:pt-3 border-t-2 border-[#282A2B]/15 shrink-0 z-30 pb-1 sm:pb-0 shadow-sm sm:shadow-none">

@@ -16,10 +16,12 @@ import { useSocket } from '@/hooks/useSocket';
 import { useClockSync } from '@/hooks/useClockSync';
 import { useMediaDevices } from '@/hooks/useMediaDevices';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { useRoomChat } from '@/hooks/useRoomChat';
 import { renderPhotoboothComposition } from '@/lib/canvas-renderer';
 
 import { PhotoboothCanvas, PhotoboothCanvasHandle } from '@/components/photobooth/PhotoboothCanvas';
 import { CameraControls } from '@/components/photobooth/CameraControls';
+import { RoomChatPanel } from '@/components/photobooth/RoomChatPanel';
 import { EnvironmentSelector } from '@/components/photobooth/EnvironmentSelector';
 import { LayoutSelector } from '@/components/photobooth/LayoutSelector';
 import { PositionControls } from '@/components/photobooth/PositionControls';
@@ -29,7 +31,7 @@ import { WaitingRoom } from '@/components/photobooth/WaitingRoom';
 import { CameraPermissionModal } from '@/components/photobooth/CameraPermissionModal';
 import { QrModal } from '@/components/photobooth/QrModal';
 import { NetworkSettingsModal } from '@/components/photobooth/NetworkSettingsModal';
-import { Globe } from 'lucide-react';
+import { Globe, MessageCircle } from 'lucide-react';
 
 export default function RoomPage() {
   const params = useParams();
@@ -55,6 +57,7 @@ export default function RoomPage() {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isQrOpen, setIsQrOpen] = useState<boolean>(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Networking Hooks
   const {
@@ -88,6 +91,7 @@ export default function RoomPage() {
   const participants = room?.participants || [];
   const [iceConfigVersion, setIceConfigVersion] = useState(0);
   const { remoteStreams } = useWebRTC(socket, selfParticipantId, participants, localStream, resolvedUrl, iceConfigVersion);
+  const { messages: chatMessages, sendMessage: sendChatMessage } = useRoomChat(socket, roomId, isConnected && hasEnteredRoom && !isStandalone);
 
   // Ref to PhotoboothCanvas so we can read its off-DOM video elements at capture time (BUG-2)
   const canvasRef = useRef<PhotoboothCanvasHandle | null>(null);
@@ -793,6 +797,15 @@ export default function RoomPage() {
             </span>
           )}
           <button
+            type="button"
+            onClick={() => setIsChatOpen((open) => !open)}
+            className="lg:hidden flex items-center gap-1 rounded-xl border-2 border-[#282A2B] bg-[#F4EFE6] p-1.5 text-[#282A2B] shadow-retro-sm"
+            aria-label="Toggle room chat"
+            aria-expanded={isChatOpen}
+          >
+            <MessageCircle className="h-4 w-4 text-[#D67C65]" />
+          </button>
+          <button
             onClick={() => setIsNetworkModalOpen(true)}
             className="p-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-retro rounded-xl bg-[#F4EFE6] border-2 border-[#282A2B] text-[#282A2B] shadow-retro-sm hover:bg-[#EBE4D5] transition shrink-0 flex items-center gap-1"
             title="Configure TURN Relay & Cross-Network Settings"
@@ -810,9 +823,10 @@ export default function RoomPage() {
       </header>
 
       {/* Center Hero: The Shared Photobooth Canvas */}
-      <div className={`relative flex-1 w-full max-w-6xl px-1 sm:px-4 flex items-center justify-center min-h-0 z-10 overflow-hidden ${
+      <div className={`relative flex-1 w-full max-w-[1440px] px-1 sm:px-4 flex items-center justify-center gap-3 min-h-0 z-10 overflow-hidden ${
         isFullscreen ? 'my-0.5' : 'my-1'
       }`}>
+        <div className="min-w-0 flex-1 h-full flex items-center justify-center">
         <PhotoboothCanvas
           ref={canvasRef}
           room={room}
@@ -822,7 +836,29 @@ export default function RoomPage() {
           onUpdatePosition={handleUpdatePosition}
           isCapturing={!!captureSession}
         />
+        </div>
+        <RoomChatPanel
+          messages={chatMessages}
+          selfParticipantId={selfParticipantId}
+          onSendMessage={sendChatMessage}
+          canChat={isConnected && !isStandalone}
+          context="camera"
+          className="hidden lg:flex w-[280px] xl:w-[310px] shrink-0 h-[min(550px,85%)]"
+        />
       </div>
+      {isChatOpen && (
+        <div className="absolute right-2 top-14 bottom-20 z-40 w-[min(360px,calc(100vw-16px))] lg:hidden">
+          <RoomChatPanel
+            messages={chatMessages}
+            selfParticipantId={selfParticipantId}
+            onSendMessage={sendChatMessage}
+            canChat={isConnected && !isStandalone}
+            context="camera"
+            className="h-full"
+            onClose={() => setIsChatOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Floating Drawers (Theme, Layout, Pose) */}
       {activeDrawer === 'env' && (
@@ -905,6 +941,10 @@ export default function RoomPage() {
           roomId={room.id}
           onRetake={handleRetake}
           onRetakeSingle={handleRetakeSingle}
+          chatMessages={chatMessages}
+          onSendChatMessage={sendChatMessage}
+          canChat={isConnected && !isStandalone}
+          selfParticipantId={selfParticipantId}
         />
       )}
 

@@ -21,6 +21,7 @@ export const SocketEvents = {
   CAPTURE_COMPLETE: 'capture:complete',
   SYNC_TIME_REQ: 'sync:time:req',
   WEBRTC_SIGNAL: 'webrtc:signal',
+  CHAT_SEND: 'chat:send',
 
   // Server -> Client
   ROOM_STATE: 'room:state',
@@ -34,11 +35,27 @@ export const SocketEvents = {
   CAPTURE_FINISHED: 'capture:finished',
   SYNC_TIME_RES: 'sync:time:res',
   ROOM_ERROR: 'room:error',
+  CHAT_MESSAGE: 'chat:message',
+  CHAT_HISTORY: 'chat:history',
 } as const;
 
 export type SocketEventName = (typeof SocketEvents)[keyof typeof SocketEvents];
 
 // Payload Definitions for strict type safety
+export interface ChatSendPayload {
+  roomId: string;
+  text: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  participantId: string;
+  name: string;
+  text: string;
+  sentAt: number;
+}
+
 export interface RoomCreatePayload {
   name: string;
 }

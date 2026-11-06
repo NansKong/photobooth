@@ -1,5 +1,8 @@
 import { Server, Socket } from 'socket.io';
+import { randomUUID } from 'crypto';
 import {
+  ChatMessage,
+  ChatSendPayload,
   CaptureCancelPayload,
   CaptureStartPayload,
   ClockSyncPing,
@@ -23,6 +26,7 @@ export function setupSocketHandlers(
 ) {
   // Track sockets that are already being cleaned up to prevent double-leave (BUG-5)
   const leavingSocketIds = new Set<string>();
+  const chatHistory = new Map<string, ChatMessage[]>();
 
   io.on('connection', (socket: Socket) => {
     // 1. Clock synchronization ping/pong (ultra-fast handler)
@@ -43,6 +47,7 @@ export function setupSocketHandlers(
         hostParticipant.socketId = socket.id;
         roomManager.mapSocket(socket.id, room.id, hostParticipant.id);
         socket.join(room.id);
+        socket.emit(SocketEvents.CHAT_HISTORY, []);
 
         if (typeof callback === 'function') {
           callback({ success: true, room, participant: hostParticipant });
@@ -89,6 +94,7 @@ export function setupSocketHandlers(
 
         const { room, participant } = result;
         socket.join(room.id);
+        socket.emit(SocketEvents.CHAT_HISTORY, chatHistory.get(room.id) || []);
 
         // Notify caller of current room state
         if (typeof callback === 'function') {
@@ -110,6 +116,36 @@ export function setupSocketHandlers(
           message: err.message || 'Failed to join room',
         });
       }
+    });
+
+    // Short, room-scoped messages for coordinating poses and photo edits.
+    let lastChatAt = 0;
+    socket.on(SocketEvents.CHAT_SEND, async (data: ChatSendPayload) => {
+      const mapping = roomManager.getSocketMapping(socket.id);
+      if (!mapping || !data || mapping.roomId !== data.roomId || typeof data.text !== 'string') return;
+
+      const text = data.text.trim().replace(/\s+/g, ' ').slice(0, 500);
+      const now = Date.now();
+      if (!text || now - lastChatAt < 350) return;
+
+      const room = await roomManager.getRoom(mapping.roomId);
+      const sender = room?.participants.find(
+        (participant) => participant.id === mapping.participantId && participant.socketId === socket.id
+      );
+      if (!sender) return;
+
+      lastChatAt = now;
+      const message: ChatMessage = {
+        id: randomUUID(),
+        roomId: mapping.roomId,
+        participantId: sender.id,
+        name: sender.name,
+        text,
+        sentAt: now,
+      };
+      const history = chatHistory.get(mapping.roomId) || [];
+      chatHistory.set(mapping.roomId, [...history, message].slice(-50));
+      io.to(mapping.roomId).emit(SocketEvents.CHAT_MESSAGE, message);
     });
 
     // 4. Participant update (position, ready state, camera/mic active)
@@ -308,6 +344,7 @@ export function setupSocketHandlers(
         roomId,
         mapping?.participantId || socket.id
       );
+      if (room?.participants.length === 0) chatHistory.delete(roomId);
 
       if (leftParticipant) {
         io.to(roomId).emit(SocketEvents.PARTICIPANT_LEFT, {
